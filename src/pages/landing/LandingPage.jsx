@@ -19,8 +19,7 @@ const LandingPage = () => {
       {/* Header */}
       <nav className="landing-nav">
         <div className="nav-logo">
-          <div className="logo-icon blue"></div>
-          <span className="logo-text">AI Project Manager</span>
+          <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image header-logo" />
         </div>
         <div className="nav-links">
           <a href="#features">Features</a>
@@ -147,8 +146,7 @@ const LandingPage = () => {
       <footer className="landing-footer">
         <div className="footer-grid">
           <div className="footer-brand">
-            <div className="logo-icon blue small"></div>
-            <span className="logo-text">AI Project Manager</span>
+            <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image footer-logo" />
             <p>Leading the future of project management through advanced artificial intelligence and intuitive design.</p>
           </div>
           <div className="footer-links-col">

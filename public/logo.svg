@@ -1,0 +1,35 @@
+<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#0d9488" />
+    </linearGradient>
+    <style>
+      .logo-text { font-family: 'Inter', sans-serif; font-weight: 800; fill: #0f172a; }
+      .logo-subtitle { font-family: 'Inter', sans-serif; font-weight: 500; fill: #64748b; font-size: 10px; }
+      [data-theme="dark"] .logo-text { fill: #ffffff; }
+      [data-theme="dark"] .logo-subtitle { fill: #94a3b8; }
+    </style>
+  </defs>
+
+  <!-- Horizontal Layout: Icon Left, Text Right -->
+  
+  <!-- Icon Mark (Shifted left and scaled) -->
+  <g transform="translate(10, 10) scale(0.35)">
+    <!-- Stylized 'A' Frame -->
+    <path d="M40 200L120 40L200 200" stroke="url(#brandGradient)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Data Nodes -->
+    <circle cx="65" cy="140" r="10" fill="#0f172a" stroke="white" stroke-width="3"/>
+    <circle cx="85" cy="100" r="10" fill="#0f172a" stroke="white" stroke-width="3"/>
+    <circle cx="105" cy="60" r="10" fill="#0f172a" stroke="white" stroke-width="3"/>
+
+    <!-- Curved Arrow Swoosh -->
+    <path d="M20 180C60 180 100 140 140 100C180 60 220 20 240 0" stroke="url(#brandGradient)" stroke-width="16" stroke-linecap="round" fill="none"/>
+    <path d="M220 10L250 0L245 30" fill="url(#brandGradient)"/>
+  </g>
+
+  <!-- Main Text (Positioned to the right of the icon) -->
+  <text x="110" y="55" class="logo-text" font-size="28" letter-spacing="-0.5">AI PROJECT MANAGER</text>
+  <text x="112" y="75" class="logo-subtitle" letter-spacing="1.5">Intelligent. Efficient. Driven.</text>
+</svg>

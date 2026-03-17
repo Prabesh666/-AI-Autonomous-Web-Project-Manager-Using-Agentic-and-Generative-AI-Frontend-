@@ -19,7 +19,7 @@ const AIWorkspace = () => {
       {/* 1. LEFT SIDEBAR */}
       <aside className="workspace-sidebar">
         <div className="ws-brand" onClick={() => navigate('/')}>
-          <div className="logo-icon blue base"></div>
+          <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image sidebar-logo" />
           <div className="brand-text">
             <h2>Workspace</h2>
             <span>AI Planning Mode</span>

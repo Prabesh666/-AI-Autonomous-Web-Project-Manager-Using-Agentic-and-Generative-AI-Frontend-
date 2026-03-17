@@ -47,7 +47,7 @@ const SettingsPage = () => {
               <div className="general-settings-content">
                 <div className="logo-upload-section">
                   <div className="logo-placeholder">
-                    <span className="logo-icon">🏢</span>
+                    <img src="/logo.svg" alt="Workspace Logo" className="logo-image settings-logo" />
                   </div>
                   <button className="btn-link">Change Logo</button>
                 </div>

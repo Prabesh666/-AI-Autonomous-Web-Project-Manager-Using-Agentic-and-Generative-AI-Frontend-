@@ -25,8 +25,7 @@ const DashboardLayout = () => {
       {/* Sidebar Navigation */}
       <aside className={`dashboard-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="logo-icon blue base"></div>
-          <span className="logo-text">TaskBoard Pro</span>
+          <img src="/logo.svg" alt="TaskBoard Pro Logo" className="logo-image sidebar-logo" />
         </div>
         
         <nav className="sidebar-nav">

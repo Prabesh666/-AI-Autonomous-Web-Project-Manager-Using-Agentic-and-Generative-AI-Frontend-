@@ -54,8 +54,7 @@ const LoginPage = ({ onNavigate }) => {
       <div className="login-sidebar">
         <div className="sidebar-content">
           <div className="logo-container">
-            <div className="logo-icon"></div>
-            <span className="logo-text">AI Project Manager</span>
+            <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image auth-logo" />
           </div>
 
           <h1 className="sidebar-title">
