@@ -10,6 +10,15 @@ const DashboardLayout = lazy(() => import('../components/layout/DashboardLayout'
 const DashboardHome = lazy(() => import('../pages/dashboard/DashboardHome'));
 const TaskBoard = lazy(() => import('../pages/dashboard/TaskBoard'));
 const AIWorkspace = lazy(() => import('../pages/dashboard/AIWorkspace'));
+const ActivityLog = lazy(() => import('../pages/activity-log/ActivityLog'));
+const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'));
+const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
+const AiReviewPage = lazy(() => import('../pages/ai-review/AiReviewPage'));
+const AiDecisionPage = lazy(() => import('../pages/ai-decision/AiDecisionPage'));
+const CreateProjectPage = lazy(() => import('../pages/projects/CreateProjectPage'));
+const AiLoadingPage = lazy(() => import('../pages/ai-states/AiLoadingPage'));
+const AiErrorPage = lazy(() => import('../pages/ai-states/AiErrorPage'));
+const AiMemoryPage = lazy(() => import('../pages/ai-memory/AiMemoryPage'));
 
 const AppRouter = () => {
   return (
@@ -24,10 +33,18 @@ const AppRouter = () => {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/tasks" element={<TaskBoard />} />
+            <Route path="/activity-log" element={<ActivityLog />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/projects/new" element={<CreateProjectPage />} />
+            <Route path="/ai-review" element={<AiReviewPage />} />
+            <Route path="/ai-decision" element={<AiDecisionPage />} />
+            <Route path="/ai-loading" element={<AiLoadingPage />} />
+            <Route path="/ai-error" element={<AiErrorPage />} />
+            <Route path="/ai-memory" element={<AiMemoryPage />} />
             {/* Future nested routes could go here */}
             <Route path="/projects" element={<Navigate to="/dashboard" replace />} />
             <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/settings" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

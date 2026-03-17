@@ -38,13 +38,33 @@ const DashboardLayout = () => {
             <span className="nav-icon">📁</span>
             Projects
           </NavLink>
+          <NavLink to="/activity-log" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon">⏱️</span>
+            Activity Log
+          </NavLink>
           <NavLink to="/tasks" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
             <span className="nav-icon">📋</span>
             Tasks
           </NavLink>
+          <NavLink to="/profile" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon">👤</span>
+            Profile
+          </NavLink>
           <NavLink to="/ai-planning" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
             <span className="nav-icon">🧠</span>
             AI Planning
+          </NavLink>
+          <NavLink to="/ai-review" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon">👁️</span>
+            AI Review
+          </NavLink>
+          <NavLink to="/ai-decision" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon">⚖️</span>
+            AI Decision
+          </NavLink>
+          <NavLink to="/ai-memory" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+            <span className="nav-icon">⏱️</span>
+            AI Memory
           </NavLink>
           <NavLink to="/settings" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
             <span className="nav-icon">⚙️</span>
@@ -61,7 +81,10 @@ const DashboardLayout = () => {
               <div className="avatar">+3</div>
             </div>
           </div>
-          <button className="btn-new-project">
+          <button className="btn-new-project" onClick={() => {
+            closeMenu();
+            window.location.href = '/projects/new';
+          }}>
             + New Project
           </button>
         </div>
