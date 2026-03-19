@@ -110,8 +110,9 @@
 .settings-card {
   background-color: var(--bg-main);
   border: 1px solid var(--input-border);
-  border-radius: 12px;
-  padding: 2rem;
+  border-radius: 14px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 /* General Settings */
@@ -174,19 +175,20 @@
 .form-group select {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.6rem 1rem;
+  padding: 0.55rem 0.9rem;
   background-color: var(--input-bg);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-primary);
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
+  font-size: 0.875rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .form-group input:focus, 
 .form-group select:focus {
   outline: none;
-  border-color: var(--btn-primary);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
 }
 
 .input-group {
@@ -307,7 +309,8 @@
 }
 
 input:checked + .slider {
-  background-color: var(--btn-primary);
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
 }
 
 input:focus + .slider {
@@ -507,19 +510,21 @@ input:checked + .slider:before {
 
 /* Buttons */
 .btn-primary {
-  padding: 0.6rem 1.25rem;
-  background-color: var(--btn-primary);
+  padding: 0.55rem 1.25rem;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 3px rgba(59,130,246,0.3);
 }
 
 .btn-primary:hover {
-  background-color: var(--btn-primary-hover);
+  opacity: 0.88;
+  box-shadow: 0 4px 12px rgba(59,130,246,0.35);
 }
 
 .btn-secondary {
@@ -539,19 +544,20 @@ input:checked + .slider:before {
 }
 
 .btn-danger {
-  padding: 0.6rem 1.25rem;
+  padding: 0.55rem 1.25rem;
   background-color: #dc2626;
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s, box-shadow 0.15s;
 }
 
 .btn-danger:hover {
   background-color: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220,38,38,0.35);
 }
 
 .btn-text-danger {

@@ -487,6 +487,45 @@
   cursor: pointer;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem; /* Reduced from 2rem for better fit */
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  white-space: nowrap; /* Prevent individual links from wrapping */
+}
+
+.nav-links a:hover {
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background-color: var(--btn-primary, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px; /* Slightly more premium roundness */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap; /* CRITICAL: Prevent text splitting into two lines */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary:hover {
+  background-color: var(--btn-hover, #2563eb);
+  transform: translateY(-1px);
+}
+
 .footer-bottom {
   text-align: center;
   padding-top: 2rem;
@@ -496,16 +535,31 @@
 }
 
 /* Responsive Overrides */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .hero-title {
     font-size: 3.5rem;
+  }
+  .nav-links {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-nav {
+    padding: 1rem 3%;
+  }
+  .nav-links a:not(.btn-primary) {
+    display: none; /* Hide text links on smaller tablets to keep the button */
+  }
+  .hero-title {
+    font-size: 2.8rem;
   }
   .stats-section {
     flex-wrap: wrap;
     gap: 2rem;
   }
   .stat-item {
-    width: 40%;
+    width: 45%;
   }
   .features-grid {
     grid-template-columns: 1fr;
@@ -516,14 +570,18 @@
 }
 
 @media (max-width: 480px) {
-  .nav-links {
-    display: none; /* simple hamburger hidden for now */
-  }
   .hero-title {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
+  }
+  .hero-subtitle {
+    font-size: 1rem;
   }
   .hero-cta-group {
     flex-direction: column;
+    padding: 0 1rem;
+  }
+  .btn-primary.large, .btn-secondary.large {
+    width: 100%;
   }
   .stat-item {
     width: 100%;
@@ -533,5 +591,9 @@
   }
   .cta-box-buttons {
     flex-direction: column;
+  }
+  .btn-primary {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 }

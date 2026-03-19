@@ -1,133 +1,56 @@
-import { useState, useEffect } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import './DashboardLayout.css';
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
+import Sidebar from './Sidebar';
+import Navbar from './Navbar';
 
 const DashboardLayout = () => {
-  const [theme, setTheme] = useState('light');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { theme } = useTheme();
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
-
-  const closeMenu = () => {
-    if (window.innerWidth <= 900) {
-      setIsMobileMenuOpen(false);
-    }
-  };
 
   return (
-    <div className="dashboard-app-container">
-      {/* Sidebar Navigation */}
-      <aside className={`dashboard-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <img src="/logo.svg" alt="TaskBoard Pro Logo" className="logo-image sidebar-logo" />
-        </div>
-        
-        <nav className="sidebar-nav">
-          <NavLink to="/dashboard" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">📊</span>
-            Dashboard
-          </NavLink>
-          <NavLink to="/projects" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">📁</span>
-            Projects
-          </NavLink>
-          <NavLink to="/activity-log" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">⏱️</span>
-            Activity Log
-          </NavLink>
-          <NavLink to="/tasks" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">📋</span>
-            Tasks
-          </NavLink>
-          <NavLink to="/profile" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">👤</span>
-            Profile
-          </NavLink>
-          <NavLink to="/ai-planning" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">🧠</span>
-            AI Planning
-          </NavLink>
-          <NavLink to="/ai-review" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">👁️</span>
-            AI Review
-          </NavLink>
-          <NavLink to="/ai-decision" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">⚖️</span>
-            AI Decision
-          </NavLink>
-          <NavLink to="/ai-memory" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">⏱️</span>
-            AI Memory
-          </NavLink>
-          <NavLink to="/settings" onClick={closeMenu} className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-            <span className="nav-icon">⚙️</span>
-            Settings
-          </NavLink>
-        </nav>
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      width: '100%',
+      overflow: 'hidden',
+      background: theme === 'dark' ? '#0d1117' : '#f8fafc',
+      fontFamily: 'Inter, sans-serif',
+    }}>
 
-        <div className="sidebar-footer">
-          <div className="team-members">
-            <span className="team-label">TEAM MEMBERS</span>
-            <div className="avatars">
-              <div className="avatar">A</div>
-              <div className="avatar">B</div>
-              <div className="avatar">+3</div>
-            </div>
-          </div>
-          <button className="btn-new-project" onClick={() => {
-            closeMenu();
-            window.location.href = '/projects/new';
+      {/* ── Sidebar ──────────────────────────────── */}
+      <Sidebar />
+
+
+      {/* ── Main content area ─────────────────────── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+      }}>
+
+        {/* Top Navbar */}
+        <Navbar />
+
+
+        {/* Page Content */}
+        <main style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          background: theme === 'dark' ? '#0d1117' : '#f8fafc',
+        }}>
+          <div style={{
+            maxWidth: '1600px',
+            margin: '0 auto',
+            padding: '1.5rem 2rem',
           }}>
-            + New Project
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content Area */}
-      <div className="dashboard-main-wrapper">
-        <header className="dashboard-topbar">
-          <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            ☰
-          </button>
-          
-          <div className="topbar-title">
-            <h2>🚀 Project Alpha</h2>
+            <Outlet />
           </div>
-
-          <div className="topbar-actions">
-            <div className="search-bar">
-              <span className="search-icon">🔍</span>
-              <input type="text" placeholder="Search tasks..." />
-            </div>
-            
-            <button className="theme-toggle-btn" onClick={toggleTheme}>
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-            
-            <button className="notification-btn">
-              🔔
-            </button>
-            
-            <div className="user-profile">
-              <span className="user-name">Alex Johnson</span>
-              <div className="user-avatar">AJ</div>
-            </div>
-          </div>
-        </header>
-
-        <main className="dashboard-content">
-          <Outlet /> {/* Child routes will render here */}
         </main>
       </div>
-      
-      {/* Mobile overlay */}
-      {isMobileMenuOpen && <div className="mobile-overlay" onClick={closeMenu}></div>}
     </div>
   );
 };

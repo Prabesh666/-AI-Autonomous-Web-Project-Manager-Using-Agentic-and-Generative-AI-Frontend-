@@ -1,0 +1,1 @@
+import{t}from"./api-CPBMRmNP.js";var r=async a=>(await t.get(`/tasks/project/${a}`)).data,n=async a=>(await t.post("/tasks",a)).data,c=async(a,s)=>(await t.put(`/tasks/${a}`,s)).data,i=async a=>(await t.delete(`/tasks/${a}`)).data;export{c as i,i as n,r,n as t};
