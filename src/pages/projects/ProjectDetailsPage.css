@@ -1,0 +1,202 @@
+/* ═══════════════════════════════════════════════════════
+   Project Details Page (Task Board) – Premium CSS
+═══════════════════════════════════════════════════════ */
+
+.pd-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem;
+  animation: pdFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pdFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Back button ──────────────────────────────────── */
+.pd-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  transition: all 0.2s;
+  padding: 0.5rem 0.75rem;
+  margin-left: -0.75rem;
+  border-radius: 8px;
+}
+.pd-back-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+[data-theme="dark"] .pd-back-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── Header Card ──────────────────────────────────── */
+.pd-header-card {
+  padding: 2rem;
+  border-radius: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+[data-theme="dark"] .pd-header-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.pd-add-task-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.pd-header-info {
+  flex: 1;
+}
+
+.pd-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.pd-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  max-width: 600px;
+  line-height: 1.6;
+}
+[data-theme="dark"] .pd-desc { color: #94a3b8; }
+
+.pd-tabs {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  margin: 1.5rem 0;
+}
+[data-theme="dark"] .pd-tabs { border-bottom-color: rgba(255,255,255,0.06); }
+
+.pd-tab-count {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 6px;
+}
+.pd-kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.pd-kanban-col {
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  min-height: 500px;
+  padding-bottom: 1.5rem;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+[data-theme="dark"] .pd-kanban-col {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+.pd-kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0 0.875rem;
+}
+
+/* ── Task Card ───────────────────────────────────── */
+.pd-task-card {
+  padding: 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left-width: 3px;
+}
+[data-theme="dark"] .pd-task-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+.pd-task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.12);
+}
+[data-theme="dark"] .pd-task-card:hover {
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.4);
+}
+
+.pd-task-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.2s;
+}
+.pd-task-card:hover .pd-task-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Spinners / Loaders ───────────────────────────── */
+.pd-spinner-lg {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(59, 130, 246, 0.1);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: pdSpin 0.8s linear infinite;
+}
+
+@keyframes pdSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .pd-kanban-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pd-page { padding: 1rem; }
+  .pd-header-card { flex-direction: column; padding: 1.5rem; gap: 1rem; }
+  .pd-kanban-grid { grid-template-columns: 1fr; }
+  .pd-add-task-btn { width: 100%; justify-content: center; }
+}

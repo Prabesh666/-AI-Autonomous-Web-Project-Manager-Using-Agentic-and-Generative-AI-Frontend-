@@ -26,7 +26,8 @@ export const useTasks = () => {
 
   const addTask = async (taskData) => {
     try {
-      const newTask = await createTask(taskData);
+      const data = await createTask(taskData);
+      const newTask = data?.task || data?.data || data;
       setTasks((prev) => [...prev, newTask]);
       return newTask;
     } catch (err) {
@@ -50,9 +51,10 @@ export const useTasks = () => {
   
   const editTaskContent = async (id, data) => {
     try {
-      const updatedTask = await updateTask(id, data);
+      const respData = await updateTask(id, data);
+      const updatedTask = respData?.task || respData?.data || respData;
       setTasks((prev) => 
-        prev.map(t => t._id === id || t.id === id ? { ...t, ...data } : t)
+        prev.map(t => t._id === id || t.id === id ? { ...t, ...updatedTask } : t)
       );
       return updatedTask;
     } catch (err) {

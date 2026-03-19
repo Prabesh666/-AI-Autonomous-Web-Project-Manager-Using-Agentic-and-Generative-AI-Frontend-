@@ -5,6 +5,7 @@ import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
 import { useToast } from '../../context/ToastContext';
 import TaskModal from './TaskModal';
+import './ProjectDetailsPage.css';
 
 
 /* ── Column config ─────────────────────────────────── */
@@ -123,15 +124,12 @@ const ProjectDetailsPage = () => {
       </button>
 
       {/* ─── Project Header Card ────────────────── */}
-      <div className="pd-header-card" style={{
-        background: isDark ? '#1f2937' : '#ffffff',
-        border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-      }}>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: isDark ? '#f9fafb' : '#111827', letterSpacing: '-0.02em' }}>
+      <div className="pd-header-card">
+        <div className="pd-header-info">
+          <h1 className="pd-title">
             {project ? project.name : 'Loading…'}
           </h1>
-          <p style={{ fontSize: '0.82rem', color: isDark ? '#9ca3af' : '#6b7280', marginTop: '0.375rem', maxWidth: '600px', lineHeight: 1.5 }}>
+          <p className="pd-desc">
             {project?.description || 'No description provided.'}
           </p>
         </div>
@@ -149,18 +147,13 @@ const ProjectDetailsPage = () => {
       </div>
 
       {/* ─── Tabs ───────────────────────────────── */}
-      <div style={{
-        display: 'flex', gap: '1.5rem',
-        borderBottom: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
-        marginTop: '1.25rem', marginBottom: '1.25rem',
-      }}>
+      <div className="pd-tabs">
         <button onClick={() => setActiveTab('tasks')} style={activeTab === 'tasks' ? tabActive('#3b82f6') : tabInactive}>
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           Kanban Board
-          <span style={{
-            padding: '0.1rem 0.45rem', borderRadius: '8px', fontSize: '0.68rem', fontWeight: 700,
+          <span className="pd-tab-count" style={{
             background: activeTab === 'tasks' ? 'rgba(59,130,246,0.12)' : (isDark ? '#374151' : '#f3f4f6'),
             color: activeTab === 'tasks' ? '#3b82f6' : '#9ca3af',
           }}>{totalTasks}</span>
@@ -233,10 +226,7 @@ const ProjectDetailsPage = () => {
               {COLUMNS.map(col => {
                 const colTasks = groupedTasks[col.key] || [];
                 return (
-                  <div key={col.key} className="pd-kanban-col" style={{
-                    background: isDark ? '#111827' : '#f9fafb',
-                    border: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
-                  }}>
+                  <div key={col.key} className="pd-kanban-col">
                     {/* Column header */}
                     <div style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -271,11 +261,7 @@ const ProjectDetailsPage = () => {
                         <div
                           key={task._id || task.id}
                           className="pd-task-card"
-                          style={{
-                            background: isDark ? '#1f2937' : '#ffffff',
-                            border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-                            borderLeft: `3px solid ${col.border}`,
-                          }}
+                          style={{ borderLeftColor: col.border }}
                         >
                           <h4 style={{
                             fontSize: '0.85rem', fontWeight: 700,

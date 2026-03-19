@@ -48,8 +48,8 @@ const TaskModal = ({ isOpen, onClose, onSave, task, projectId }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all border border-gray-100 dark:border-gray-700">
         <div className="flex justify-between items-center mb-5">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {task ? 'Edit Task' : 'Create New Task'}
@@ -107,7 +107,7 @@ const TaskModal = ({ isOpen, onClose, onSave, task, projectId }) => {
               onChange={(e) => setStatus(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white outline-none transition-colors"
             >
-              <option value="pending">Pending</option>
+              <option value="pending">To Do</option>
               <option value="in-progress">In Progress</option>
               <option value="completed">Completed</option>
             </select>
