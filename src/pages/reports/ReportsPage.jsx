@@ -21,7 +21,6 @@ const ReportsPage = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,7 +34,6 @@ const ReportsPage = () => {
   /* ── Load projects ─────────────────────────────── */
   useEffect(() => {
     (async () => {
-      setLoading(true);
       try {
         const data = await fetchProjects();
         const list = Array.isArray(data) ? data
@@ -44,7 +42,6 @@ const ReportsPage = () => {
         setProjects(list);
         if (list.length > 0) setSelectedProject(list[0]._id || list[0].id);
       } catch { /* silent */ }
-      finally { setLoading(false); }
     })();
   }, []);
 

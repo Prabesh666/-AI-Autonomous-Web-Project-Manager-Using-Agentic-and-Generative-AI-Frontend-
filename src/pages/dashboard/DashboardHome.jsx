@@ -122,7 +122,7 @@ const TaskCard = ({ task, onClick }) => {
 };
 
 /* ─── Kanban Column ──────────────────────────────────────────────────────────── */
-const KanbanColumn = ({ title, status, dot, tasks, loading, onAddTask }) => (
+const KanbanColumn = ({ title, dot, tasks, loading, onAddTask }) => (
   <div className="kanban-section">
     <div className="section-header">
       <h3>
@@ -166,7 +166,6 @@ const DashboardHome = () => {
 
   const [activeTab, setActiveTab] = useState('today');
   const [searchQuery, setSearchQuery] = useState('');
-  const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -185,7 +184,7 @@ const DashboardHome = () => {
       const proj = Array.isArray(projectList)
         ? projectList
         : projectList.results || projectList.projects || [];
-      setProjects(proj);
+      // setProjects(proj); // Removed unused state
 
       if (proj.length > 0) {
         const allTasks = await Promise.all(

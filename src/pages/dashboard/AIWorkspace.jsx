@@ -14,7 +14,7 @@ const AIWorkspace = () => {
   
   const { projects, loadProjects } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const { tasks, loading, loadTasks } = useTasks();
+  const { loading, loadTasks } = useTasks();
 
   useEffect(() => {
     loadProjects();
