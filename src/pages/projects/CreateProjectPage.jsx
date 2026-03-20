@@ -55,11 +55,11 @@ const CreateProjectPage = () => {
         created_by: user?.email,
       });
 
-      const projectId = project?.id || project?._id || project?.project?.id;
+      const projectId = project?.id || project?._id || project?.project?.id || project?.project?._id || project?.data?.id || project?.data?._id;
 
       /* Step 2: run AI agent to generate milestones + tasks */
       setStatusText('AI is generating milestones and tasks...');
-      await runAgent('project_plan', {
+      await runAgent('planner', {
         projectId,
         prompt,
       });

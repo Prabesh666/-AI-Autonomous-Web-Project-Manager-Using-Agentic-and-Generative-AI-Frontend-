@@ -6,7 +6,7 @@ import api from './index';
  * @returns {Promise<any>} Response data from the API
  */
 export const createReport = async (data) => {
-  const response = await api.post('/api/reports', data);
+  const response = await api.post('/reports', data);
   return response.data;
 };
 
@@ -15,6 +15,6 @@ export const createReport = async (data) => {
  * @param {string} projectId 
  */
 export const fetchReports = async (projectId) => {
-  const response = await api.get(`/api/reports/project/${projectId}`);
+  const response = await api.get(`/reports/${projectId}`);
   return response.data;
 };
