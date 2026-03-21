@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { fetchProjects } from '../../api/projects';
 import { createReport, fetchReports } from '../../api/reports';
+import { useAgents } from '../../hooks/useAgents';
+import { useToast } from '../../context/ToastContext';
 import './ReportsPage.css';
 
 /* ── Helpers ───────────────────────────────────────── */
@@ -30,6 +32,9 @@ const ReportsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [formError, setFormError] = useState('');
+
+  const { loadingMap, executeAgent } = useAgents();
+  const toast = useToast();
 
   /* ── Load projects ─────────────────────────────── */
   useEffect(() => {
@@ -89,26 +94,36 @@ const ReportsPage = () => {
     }
   };
 
+  const handleAiGenerate = async () => {
+    if (!selectedProject) {
+      toast.error('Please select a project first.');
+      return;
+    }
+
+    try {
+      const result = await executeAgent('report', { projectId: selectedProject, stage: 'start' });
+      // Expecting { data: { title, content } } or similar from the AI agent response
+      // Based on common patterns in this app's agents
+      const reportData = result?.data?.report || result?.report || result;
+      
+      if (reportData?.title) setTitle(reportData.title);
+      if (reportData?.content) setContent(reportData.content);
+      
+      toast.success('AI Report generated successfully!');
+    } catch {
+      toast.error('Failed to generate AI report.');
+    }
+  };
+
   /* ── Render ────────────────────────────────────── */
   return (
     <div className="reports-page" style={{ animation: 'rpFadeIn 0.35s ease both' }}>
 
-      {/* Header */}
+      {/* Header Options */}
       <div className="rp-header" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: '1rem',
-        paddingBottom: '1rem', marginBottom: '1.5rem',
-        borderBottom: `1px solid ${isDark ? '#1f2937' : '#e5e7eb'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        marginBottom: '1rem',
       }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: isDark ? '#f9fafb' : '#111827', letterSpacing: '-0.02em' }}>
-            Reports
-          </h1>
-          <p style={{ fontSize: '0.82rem', color: isDark ? '#6b7280' : '#9ca3af', marginTop: '0.25rem' }}>
-            Generate and manage project reports.
-          </p>
-        </div>
-
         {/* Project selector */}
         {projects.length > 0 && (
           <select
@@ -195,7 +210,20 @@ const ReportsPage = () => {
                 }}
               />
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <div className="rp-form-actions">
+                <button
+                  type="button"
+                  onClick={handleAiGenerate}
+                  disabled={loadingMap['report'] || !selectedProject}
+                  className="rp-ai-btn"
+                >
+                  {loadingMap['report'] ? (
+                    <><span className="rp-spinner" /> Generating...</>
+                  ) : (
+                    <><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> AI Generate</>
+                  )}
+                </button>
+
                 <button
                   type="submit"
                   disabled={submitting || !selectedProject}

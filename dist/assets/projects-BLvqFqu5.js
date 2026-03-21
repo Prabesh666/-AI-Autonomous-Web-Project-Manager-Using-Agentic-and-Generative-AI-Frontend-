@@ -1,0 +1,1 @@
+import{t as a}from"./api-wGGFAy4V.js";var s=async()=>(await a.get("/projects")).data,c=async t=>(await a.post("/projects",t)).data,o=async(t,e)=>(await a.put(`/projects/${t}`,e)).data,n=async t=>(await a.delete(`/projects/${t}`)).data;export{o as i,n,s as r,c as t};

@@ -18,7 +18,6 @@ const PAGE_LABELS = {
   '/profile': 'Profile',
   '/settings': 'Settings',
   '/reports': 'Reports',
-  '/tasks': 'Tasks',
 };
 
 const Navbar = () => {

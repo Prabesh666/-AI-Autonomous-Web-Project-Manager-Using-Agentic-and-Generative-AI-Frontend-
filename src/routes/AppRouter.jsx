@@ -8,7 +8,6 @@ const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 
 const DashboardLayout = lazy(() => import('../components/layout/DashboardLayout'));
 const DashboardHome = lazy(() => import('../pages/dashboard/DashboardHome'));
-const TaskBoard = lazy(() => import('../pages/dashboard/TaskBoard'));
 const AIWorkspace = lazy(() => import('../pages/dashboard/AIWorkspace'));
 const ActivityLog = lazy(() => import('../pages/activity-log/ActivityLog'));
 const ProfilePage = lazy(() => import('../pages/profile/ProfilePage'));
@@ -22,6 +21,7 @@ const AiLoadingPage = lazy(() => import('../pages/ai-states/AiLoadingPage'));
 const AiErrorPage = lazy(() => import('../pages/ai-states/AiErrorPage'));
 const AiMemoryPage = lazy(() => import('../pages/ai-memory/AiMemoryPage'));
 const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'));
+
 const TestDashboard = lazy(() => import('../pages/TestDashboard'));
 import PrivateRoute from '../components/PrivateRoute';
 
@@ -37,7 +37,6 @@ const AppRouter = () => {
           <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="/dashboard" element={<DashboardHome />} />
             <Route path="/ai-planning" element={<AIWorkspace />} />
-            <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/activity-log" element={<ActivityLog />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />

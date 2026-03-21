@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
-import { useNavigate } from 'react-router-dom';
+import { useAgents } from '../../hooks/useAgents';
+import { useToast } from '../../context/ToastContext';
 
 /* ══════════════════════════════════════════════════════
    AI PLANNING WORKSPACE (AI Planning)
@@ -10,15 +11,16 @@ import { useNavigate } from 'react-router-dom';
 const AIWorkspace = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const navigate = useNavigate();
+  const toast = useToast();
   
   const { projects, loadProjects } = useProjects();
+  const { tasks, loadTasks } = useTasks();
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const { loading, loadTasks } = useTasks();
+  const { loadingMap, resultsMap, executeAgent, clearResult } = useAgents();
 
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    if (projects.length === 0) loadProjects();
+  }, [projects, loadProjects]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -26,7 +28,55 @@ const AIWorkspace = () => {
     }
   }, [selectedProjectId, loadTasks]);
 
-  const selectedProject = projects.find(p => p._id === selectedProjectId || p.id === selectedProjectId);
+  const handleRunEngine = async (type) => {
+    if (!selectedProjectId) {
+      toast.error('Please select a project first.');
+      return;
+    }
+
+    let payload = { projectId: selectedProjectId };
+
+    // Dynamically build payloads based on engine/agent requirements
+    if (type === 'scoring') {
+      // Precise payload mapping for Scoring Engine per Postman screenshot
+      const formattedTasks = tasks.map(t => ({
+        name: t.title || t.name || 'Untitled Task',
+        priority: t.priority || 'medium',
+        riskLevel: t.riskLevel || 'low'
+      }));
+      payload = { tasks: formattedTasks };
+    } else if (type === 'replanning') {
+      // Precise payload mapping for Replanning Engine per latest screenshot
+      const formattedTasks = tasks.map(t => ({
+        id: t._id || t.id || t.name,
+        dependencies: t.dependencies || []
+      }));
+      payload = { 
+        failedTaskId: formattedTasks[0]?.id || 'task_001', 
+        tasks: formattedTasks 
+      };
+    } else if (type === 'dependency') {
+      // Precise payload mapping for Dependency Engine per latest screenshot
+      const formattedTasks = tasks.map(t => ({
+        id: t._id || t.id || t.name,
+        dependencies: t.dependencies || []
+      }));
+      payload = { tasks: formattedTasks };
+    } else {
+      payload = { ...payload, stage: 'start' };
+    }
+
+    try {
+      // Final precision dispatch
+      let finalPayload = payload;
+      if (type === 'rule') finalPayload = { stage: 'start' };
+      
+      await executeAgent(type, finalPayload);
+      toast.success(`${type} module executed.`);
+    } catch (err) {
+      toast.error(err.message || `Failed to run ${type}.`);
+    }
+  };
 
   /* ── Styles ────────────────────────────────────── */
   const cardStyle = {
@@ -83,14 +133,14 @@ const AIWorkspace = () => {
               </svg>
             </div>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>
-              AI Strategic Planner
+              AI Engine Control Center
             </span>
           </div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
-            Smart Project Planning
+            Autonomous Operations
           </h1>
           <p style={{ fontSize: '1.05rem', opacity: 0.9, maxWidth: '600px', lineHeight: 1.6 }}>
-            Leverage advanced AI to generate roadmaps, optimize resources, and predict project bottlenecks before they happen.
+            Execute highly-specialized ML engines manually to process business rules, compute risk scores, adjust dependencies, and orchestrate replanning.
           </p>
         </div>
       </div>
@@ -99,7 +149,7 @@ const AIWorkspace = () => {
       <div style={{ ...cardStyle, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '280px' }}>
           <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#9ca3af' : '#64748b', marginBottom: '0.5rem' }}>
-            Select Active Project
+            1. Select Active Project Context
           </label>
           <select 
             value={selectedProjectId}
@@ -116,120 +166,122 @@ const AIWorkspace = () => {
               cursor: 'pointer'
             }}
           >
-            <option value="">Choose a project...</option>
+            <option value="">Awaiting project selection...</option>
             {projects.map(p => (
               <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>
             ))}
           </select>
         </div>
-        
-        <button 
-          disabled={!selectedProjectId || loading}
-          style={{
-            padding: '0.85rem 2rem',
-            background: !selectedProjectId ? (isDark ? '#374151' : '#e2e8f0') : 'linear-gradient(135deg, #3b82f6, #6366f1)',
-            color: !selectedProjectId ? (isDark ? '#6b7280' : '#94a3b8') : '#fff',
-            border: 'none',
-            borderRadius: '10px',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            cursor: !selectedProjectId ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: selectedProjectId ? '0 4px 12px rgba(99,102,241,0.3)' : 'none',
-            marginTop: '1.25rem'
-          }}
-          onMouseEnter={e => { if(selectedProjectId) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-          onMouseLeave={e => { if(selectedProjectId) e.currentTarget.style.transform = 'translateY(0)'; }}
-        >
-          {loading ? 'Analyzing...' : 'Generate AI Plan ✨'}
-        </button>
       </div>
 
-      {/* ── Content Grid ──────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        
-        {/* Resource Allocation */}
-        <div style={cardStyle}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: textPrimary(isDark), marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#3b82f6' }}>📊</span> Resource Optimization
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[
-              { label: 'Development', val: 85, color: '#3b82f6' },
-              { label: 'Design', val: 40, color: '#ec4899' },
-              { label: 'QA / Testing', val: 20, color: '#f59e0b' }
-            ].map((item, i) => (
-              <div key={i}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
-                  <span style={{ color: isDark ? '#d1d5db' : '#475569', fontWeight: 500 }}>{item.label}</span>
-                  <span style={{ color: item.color, fontWeight: 700 }}>{item.val}%</span>
+      {/* ── Agents Grid ───────────────────────────── */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#9ca3af' : '#64748b', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          AI Agents
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+          {[
+            { id: 'decision', name: 'Decision Agent', icon: '🧠', desc: 'Evaluates project trade-offs and provides optimized direction.' },
+            { id: 'task', name: 'Task Agent', icon: '📝', desc: 'Decomposes high-level goals into granular, actionable sub-tasks.' },
+            { id: 'risk', name: 'Risk Agent', icon: '🛡️', desc: 'Identifies potential failures and suggests mitigation strategies.' },
+            { id: 'ethics', name: 'Ethics Agent', icon: '⚖️', desc: 'Ensures compliance with safety guidelines and ethical standards.' },
+            { id: 'report', name: 'Report Agent', icon: '📊', desc: 'Generates executive summaries and health status reports.' }
+          ].map(agent => (
+            <div key={agent.id} style={{ ...cardStyle, padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>{agent.icon}</span>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: textPrimary(isDark) }}>{agent.name}</h3>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: isDark ? '#9ca3af' : '#64748b', lineHeight: 1.4, marginBottom: '1rem' }}>{agent.desc}</p>
+              <button
+                onClick={() => handleRunEngine(agent.id)}
+                disabled={loadingMap[agent.id] || !selectedProjectId}
+                style={{
+                  width: '100%', padding: '0.5rem',
+                  background: loadingMap[agent.id] || !selectedProjectId ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(139, 92, 246, 0.1)',
+                  border: `1px solid ${loadingMap[agent.id] || !selectedProjectId ? 'transparent' : 'rgba(139, 92, 246, 0.4)'}`,
+                  color: loadingMap[agent.id] || !selectedProjectId ? (isDark ? '#6b7280' : '#94a3b8') : '#8b5cf6',
+                  borderRadius: '6px', fontWeight: 600, fontSize: '0.8rem',
+                  cursor: loadingMap[agent.id] || !selectedProjectId ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {loadingMap[agent.id] ? 'Running...' : 'Run Agent'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Engines Grid ──────────────────────────── */}
+      <div style={{ marginBottom: '2.5rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#9ca3af' : '#64748b', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Autonomous Engines
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          {[
+            { id: 'rule', name: 'Rule Engine', icon: '⚙️', desc: 'Validates constraints and enforces strict project governance rules.' },
+            { id: 'scoring', name: 'Scoring Engine', icon: '🎯', desc: 'Calculates priority scores, risk metrics, and workload balancing.' },
+            { id: 'dependency', name: 'Dependency Engine', icon: '🔗', desc: 'Analyzes cross-task relationships and detects critical path blockers.' },
+            { id: 'replanning', name: 'Replanning Engine', icon: '🔄', desc: 'Auto-adjusts timelines and resources to compensate for delays.' }
+          ].map(engine => (
+            <div key={engine.id} style={{ ...cardStyle }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: textPrimary(isDark), marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>{engine.icon}</span> {engine.name}
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: isDark ? '#9ca3af' : '#64748b', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                {engine.desc}
+              </p>
+              <button
+                onClick={() => handleRunEngine(engine.id)}
+                disabled={loadingMap[engine.id] || !selectedProjectId}
+                style={{
+                  width: '100%', padding: '0.75rem',
+                  background: loadingMap[engine.id] || !selectedProjectId ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(59, 130, 246, 0.1)',
+                  border: `1px solid ${loadingMap[engine.id] || !selectedProjectId ? 'transparent' : 'rgba(59, 130, 246, 0.4)'}`,
+                  color: loadingMap[engine.id] || !selectedProjectId ? (isDark ? '#6b7280' : '#94a3b8') : '#3b82f6',
+                  borderRadius: '8px', fontWeight: 600,
+                  cursor: loadingMap[engine.id] || !selectedProjectId ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {loadingMap[engine.id] ? 'Executing...' : `Execute ${engine.name}`}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Console Output Area ──────────────────────── */}
+      {Object.keys(resultsMap).length > 0 && (
+        <div style={{
+          background: '#0f172a', borderRadius: '14px', border: '1px solid #1e293b', 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden', animation: 'fadeIn 0.4s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.5rem', background: '#1e293b', borderBottom: '1px solid #334155' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2z" />
+               </svg>
+               <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}>engine_execution.log</span>
+             </div>
+             <button onClick={() => Object.keys(resultsMap).forEach(clearResult)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
+               [ clear ]
+             </button>
+          </div>
+          <div style={{ padding: '1.5rem', maxHeight: '400px', overflowY: 'auto' }}>
+            {Object.entries(resultsMap).map(([key, data]) => (
+              <div key={key} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px dashed #334155' }}>
+                <div style={{ color: '#3b82f6', marginBottom: '0.8rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                  &gt; Output stream for [{key}] module at {new Date().toLocaleTimeString()}
                 </div>
-                <div style={{ height: '8px', background: isDark ? '#374151' : '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${item.val}%`, height: '100%', background: item.color, borderRadius: '4px' }} />
-                </div>
+                <pre style={{ margin: 0, color: '#10b981', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                  {JSON.stringify(data?.data || data, null, 2)}
+                </pre>
               </div>
             ))}
           </div>
         </div>
-
-        {/* AI Recommendations */}
-        <div style={cardStyle}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: textPrimary(isDark), marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#8b5cf6' }}>💡</span> AI Insights
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {[
-              "Parallelize backend setup to save 3 days.",
-              "Documentation is a risk for Sprint 2.",
-              "QA capacity alert for next week."
-            ].map((text, i) => (
-              <div key={i} style={{ 
-                padding: '0.85rem', 
-                background: isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)', 
-                borderLeft: '3px solid #3b82f6',
-                borderRadius: '6px',
-                fontSize: '0.88rem',
-                color: isDark ? '#e5e7eb' : '#334155',
-                lineHeight: 1.4
-              }}>
-                {text}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Milestone Tracker */}
-        <div style={{ ...cardStyle, gridColumn: 'span 1' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: textPrimary(isDark), marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#10b981' }}>🚩</span> Milestones
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {selectedProject ? (
-              <div style={{ textAlign: 'center', padding: '1rem' }}>
-                <p style={{ fontSize: '0.85rem', color: isDark ? '#9ca3af' : '#64748b' }}>Project: <strong style={{color: textPrimary(isDark)}}>{selectedProject.name}</strong></p>
-                <button 
-                  onClick={() => navigate(`/projects/${selectedProject._id || selectedProject.id}`)}
-                  style={{
-                    marginTop: '1rem',
-                    padding: '0.5rem 1rem',
-                    background: 'none',
-                    border: '1px solid #3b82f6',
-                    color: '#3b82f6',
-                    borderRadius: '8px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  View Kanban Board
-                </button>
-              </div>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem', padding: '1rem' }}>Select a project to see milestones</p>
-            )}
-          </div>
-        </div>
-      </div>
+      )}
       
       {/* Styles defined as functions to handle theme */}
       <style>{`

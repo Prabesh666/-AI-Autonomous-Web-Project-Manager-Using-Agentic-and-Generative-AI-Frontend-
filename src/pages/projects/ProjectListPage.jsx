@@ -147,7 +147,6 @@ const ProjectListPage = () => {
               }}
             />
           </div>
-
           {/* New project button */}
           <button
             onClick={handleOpenCreate}

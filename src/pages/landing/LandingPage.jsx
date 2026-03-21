@@ -1,39 +1,69 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 import './LandingPage.css';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState('light');
+  const { theme, toggleTheme } = useTheme();
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+    // Intersection Observer for reveal animations
+    const observerOptions = { threshold: 0.15 };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    const revealedElements = document.querySelectorAll('.reveal-on-scroll');
+    revealedElements.forEach(el => observer.observe(el));
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      revealedElements.forEach(el => observer.unobserve(el));
+    };
+  }, []);
 
   return (
     <div className="landing-container">
       {/* Header */}
-      <nav className="landing-nav">
-        <div className="nav-logo">
-          <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image header-logo" />
-        </div>
-        <div className="nav-links">
-          <a href="#features">Features</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#about">About</a>
-          <button 
-            className="btn-primary" 
-            onClick={() => navigate('/register')}
-          >
-            Get Started for Free
-          </button>
-          <button className="theme-toggle" style={{ position: 'relative', top: '0', right: '0', marginLeft: '1rem' }} onClick={toggleTheme}>
-            {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
-          </button>
+      <nav className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}>
+        <div className="nav-container">
+          <div className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image header-logo" />
+            <span className="logo-text">AI<span className="text-gradient">Manager</span></span>
+          </div>
+          <div className="nav-links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#about">About</a>
+            <div className="nav-actions">
+              <button className="theme-toggle-minimal" onClick={toggleTheme}>
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+              <button 
+                className="btn-primary-outline" 
+                onClick={() => navigate('/login')}
+              >
+                Log In
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={() => navigate('/register')}
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
 
@@ -46,12 +76,12 @@ const LandingPage = () => {
         
         <h1 className="hero-title">
           Manage your projects<br />
-          with <span className="text-gradient">AI precision</span>
+          with <span className="text-gradient-animate">AI Autonomy</span>
         </h1>
         
         <p className="hero-subtitle">
-          The all-in-one workspace that predicts bottlenecks, automates status<br />
-          updates, and keeps your team aligned effortlessly.
+          The project manager that doesn't just track tasks—it <span className="typing-text">thinks</span> for you.
+          Predictive analytics and autonomous engines are here to stay.
         </p>
         
         <div className="hero-cta-group">
@@ -67,19 +97,23 @@ const LandingPage = () => {
         </div>
 
         {/* Dashboard Mockup Display */}
-        <div className="dashboard-preview-wrapper">
-          <div className="dashboard-preview" onClick={() => navigate('/dashboard')}>
-            <div className="preview-glass-efffect"></div>
-            {/* We will use a placeholder or CSS shapes until the final asset is ready */}
-            <div className="preview-content-placeholder">
-              <div className="placeholder-sidebar"></div>
-              <div className="placeholder-main">
-                <div className="placeholder-gantt"></div>
-                <div className="placeholder-cards">
-                   <div className="p-card"></div>
-                   <div className="p-card"></div>
-                   <div className="p-card"></div>
+        <div className="dashboard-preview-wrapper reveal-on-scroll">
+          <div className="dashboard-preview-frame">
+            <div className="preview-top-bar">
+              <div className="dots"><span></span><span></span><span></span></div>
+              <div className="mock-url">app.aimanager.ai/workspace</div>
+            </div>
+            <div className="dashboard-preview" onClick={() => navigate('/dashboard')}>
+              <div className="preview-glass-effect"></div>
+              <div className="mock-sidebar"></div>
+              <div className="mock-body">
+                <div className="mock-header"></div>
+                <div className="mock-grid">
+                  <div className="mock-card pulse-blue"></div>
+                  <div className="mock-card pulse-purple"></div>
+                  <div className="mock-card pulse-green"></div>
                 </div>
+                <div className="mock-chart"></div>
               </div>
             </div>
           </div>
@@ -87,7 +121,7 @@ const LandingPage = () => {
       </header>
 
       {/* Stats Section */}
-      <section className="stats-section">
+      <section className="stats-section reveal-on-scroll">
         <div className="stat-item">
           <h2>10k+</h2>
           <p>Active Teams</p>
@@ -108,21 +142,21 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section id="features" className="features-section">
-        <p className="section-eyebrow">CORE CAPABILITIES</p>
-        <h2 className="section-title">Streamline your workflow with AI</h2>
+        <p className="section-eyebrow reveal-on-scroll">CORE CAPABILITIES</p>
+        <h2 className="section-title reveal-on-scroll">Streamline your workflow with AI</h2>
         
         <div className="features-grid">
-          <div className="feature-card-detailed">
+          <div className="feature-card-detailed reveal-on-scroll">
             <div className="fc-icon">📅</div>
             <h3>Smart Scheduling</h3>
             <p>AI-powered timelines that adjust automatically when deadlines shift. Predictive rescheduling keeps your team on track.</p>
           </div>
-          <div className="feature-card-detailed">
+          <div className="feature-card-detailed reveal-on-scroll">
             <div className="fc-icon">✨</div>
             <h3>Predictive Analytics</h3>
             <p>Identify project risks before they become problems with data-driven insights. Forecast delays and resource gaps instantly.</p>
           </div>
-          <div className="feature-card-detailed">
+          <div className="feature-card-detailed reveal-on-scroll">
             <div className="fc-icon">⚡</div>
             <h3>Automated Workflows</h3>
             <p>Let AI handle the busy work—from meeting summaries to task assignments. Connect your favorite tools and let automation do the rest.</p>
@@ -130,8 +164,49 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Pricing Section */}
+      <section id="pricing" className="pricing-section reveal-on-scroll">
+        <p className="section-eyebrow">FLEXIBLE PLANS</p>
+        <h2 className="section-title">Scalable solutions for every team</h2>
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <h3>Starter</h3>
+            <div className="price">$0<span>/mo</span></div>
+            <ul>
+              <li>Up to 3 Projects</li>
+              <li>Basic AI Planner</li>
+              <li>Community Support</li>
+            </ul>
+            <button className="btn-primary-outline" onClick={() => navigate('/register')}>Get Started</button>
+          </div>
+          <div className="pricing-card featured">
+            <div className="plan-badge">MOST POPULAR</div>
+            <h3>Pro</h3>
+            <div className="price">$29<span>/mo</span></div>
+            <ul>
+              <li>Unlimited Projects</li>
+              <li>Full Autonomous Engines</li>
+              <li>Priority AI Compute</li>
+              <li>Advanced Reporting</li>
+            </ul>
+            <button className="btn-primary" onClick={() => navigate('/register')}>Go Pro</button>
+          </div>
+          <div className="pricing-card">
+            <h3>Enterprise</h3>
+            <div className="price">Custom</div>
+            <ul>
+              <li>Dedicated AI Instance</li>
+              <li>Custom Ethics Rules</li>
+              <li>SLA-backed Uptime</li>
+              <li>24/7 Premium Support</li>
+            </ul>
+            <button className="btn-primary-outline">Contact Sales</button>
+          </div>
+        </div>
+      </section>
+
       {/* Bottom CTA */}
-      <section className="bottom-cta-section">
+      <section className="bottom-cta-section reveal-on-scroll">
         <div className="cta-box">
           <h2>Ready to transform your<br />productivity?</h2>
           <p>Join thousands of teams already using AI Project Manager to deliver results<br />faster and more reliably.</p>
@@ -143,7 +218,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer">
+      <footer id="about" className="landing-footer">
         <div className="footer-grid">
           <div className="footer-brand">
             <img src="/logo.svg" alt="AI Project Manager Logo" className="logo-image footer-logo" />
