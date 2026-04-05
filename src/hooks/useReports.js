@@ -26,7 +26,8 @@ export const useReports = () => {
     setLoading(true);
     setError(null);
     try {
-      const newReport = await createReport(reportData);
+      const data = await createReport(reportData);
+      const newReport = data?.report || data?.data || data;
       setReports((prev) => [newReport, ...prev]);
       return newReport;
     } catch (err) {

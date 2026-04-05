@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 
 /* Route → page label map for breadcrumb */
@@ -20,8 +20,8 @@ const PAGE_LABELS = {
   '/reports': 'Reports',
 };
 
-const Navbar = () => {
-  const { user } = useContext(AuthContext);
+const Navbar = ({ onMenuClick }) => {
+  const { user } = useContext(AppContext);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,8 +58,25 @@ const Navbar = () => {
 
       {/* ── Left: breadcrumb ──────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Mobile Menu Button */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-2 rounded-lg"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: theme === 'dark' ? '#9ca3af' : '#6b7280',
+            cursor: 'pointer',
+          }}
+          aria-label="Open menu"
+        >
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
         {/* Page breadcrumb */}
-        <div style={{
+        <div className="hidden sm:flex" style={{
           fontSize: '0.82rem',
           color: theme === 'dark' ? '#6b7280' : '#9ca3af',
           display: 'flex', alignItems: 'center', gap: '0.375rem'

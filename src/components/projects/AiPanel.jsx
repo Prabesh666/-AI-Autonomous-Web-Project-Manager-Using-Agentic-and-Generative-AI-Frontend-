@@ -21,8 +21,8 @@ const AiPanel = ({ projectId }) => {
   ];
 
   const handleRun = (type) => {
-    // Injecting typical dummy payload schema alongside projectId
-    executeAgent(type, { projectId, timestamp: Date.now() });
+    // Standard call: POST /agents/run { projectId, type }
+    executeAgent(type, projectId);
   };
 
   const renderCard = ({ id, name, description, icon }) => {

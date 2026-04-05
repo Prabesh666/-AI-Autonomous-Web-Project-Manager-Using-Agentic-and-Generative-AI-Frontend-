@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useProjects } from '../../hooks/useProjects';
 
 const navItems = [
   {
@@ -63,8 +64,9 @@ const aiItems = [
       </svg>
     )
   },
+  // AI Review is parameterized — static placeholder; resolved dynamically below
   {
-    to: '/ai-review', label: 'AI Review',
+    to: '/ai-review', label: 'AI Review', paramKey: 'ai-review',
     icon: (
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -89,10 +91,19 @@ const aiItems = [
   },
 ];
 
-const Sidebar = () => {
-  const { user, logout } = useContext(AuthContext);
+const Sidebar = ({ isOpen, onClose }) => {
+  const { user, logout } = useContext(AppContext);
+  const { projects } = useProjects();
   const { theme } = useTheme();
   const navigate = useNavigate();
+
+  // Build dynamic AI Review link using first available project
+  const firstProjectId = projects?.[0]?._id || projects?.[0]?.id || '';
+  const resolvedAiItems = aiItems.map(item =>
+    item.paramKey === 'ai-review'
+      ? { ...item, to: firstProjectId ? `/ai-review/${firstProjectId}` : '/projects' }
+      : item
+  );
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -114,7 +125,7 @@ const Sidebar = () => {
     flexDirection: 'column',
     background: bg,
     borderRight: `1px solid ${border}`,
-    transition: 'background 0.2s',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   };
 
   const NavGroup = ({ label, items }) => (
@@ -168,110 +179,136 @@ const Sidebar = () => {
   );
 
   return (
-    <aside style={sidebarStyle}>
-      {/* Logo */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        height: '64px',
-        padding: '0 1.25rem',
-        borderBottom: `1px solid ${border}`,
-        flexShrink: 0,
-      }}>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
+          onClick={onClose}
+        />
+      )}
+
+      <aside 
+        style={sidebarStyle}
+        className={`
+          fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          shadow-2xl md:shadow-none
+        `}
+      >
+        {/* Logo */}
         <div style={{
-          width: '32px', height: '32px',
-          borderRadius: '8px',
-          background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: '64px',
+          padding: '0 1.25rem',
+          borderBottom: `1px solid ${border}`,
           flexShrink: 0,
         }}>
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{
+              width: '32px', height: '32px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(99,102,241,0.4)',
+              flexShrink: 0,
+            }}>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p style={{ fontSize: '0.875rem', fontWeight: 800, color: textPrimary, lineHeight: 1.2 }}>
+                AI Manager
+              </p>
+            </div>
+          </div>
+          
+          {/* Mobile Close Button */}
+          <button 
+            onClick={onClose}
+            className="md:hidden p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div>
-          <p style={{ fontSize: '0.875rem', fontWeight: 800, color: textPrimary, lineHeight: 1.2 }}>
-            AI Manager
-          </p>
-          <p style={{ fontSize: '0.62rem', color: textSecondary, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            Productivity Suite
-          </p>
+
+        {/* Navigation */}
+        <nav style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '1rem 0.75rem',
+        }}>
+          <NavGroup label="Main"     items={navItems}           />
+          <NavGroup label="AI Tools" items={resolvedAiItems}    />
+        </nav>
+
+        {/* Footer */}
+        <div style={{
+          flexShrink: 0,
+          padding: '1rem',
+          borderTop: `1px solid ${border}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+        }}>
+          <button
+            onClick={() => { navigate('/projects/new'); }}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              width: '100%', padding: '0.625rem',
+              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+              color: '#fff',
+              border: 'none', borderRadius: '8px',
+              fontSize: '0.82rem', fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
+              transition: 'opacity 0.2s, transform 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            + New Project
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              width: '100%', padding: '0.55rem',
+              background: 'transparent',
+              color: textSecondary,
+              border: `1px solid ${border}`, borderRadius: '8px',
+              fontSize: '0.82rem', fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.color = '#ef4444';
+              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
+              e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.color = textSecondary;
+              e.currentTarget.style.borderColor = border;
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Sign Out
+          </button>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <nav style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '1rem 0.75rem',
-      }}>
-        <NavGroup label="Main"     items={navItems} />
-        <NavGroup label="AI Tools" items={aiItems}  />
-      </nav>
-
-      {/* Footer */}
-      <div style={{
-        flexShrink: 0,
-        padding: '1rem',
-        borderTop: `1px solid ${border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-      }}>
-        <button
-          onClick={() => { navigate('/projects/new'); }}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            width: '100%', padding: '0.625rem',
-            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-            color: '#fff',
-            border: 'none', borderRadius: '8px',
-            fontSize: '0.82rem', fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
-            transition: 'opacity 0.2s, transform 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          + New Project
-        </button>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-            width: '100%', padding: '0.55rem',
-            background: 'transparent',
-            color: textSecondary,
-            border: `1px solid ${border}`, borderRadius: '8px',
-            fontSize: '0.82rem', fontWeight: 500,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.color = '#ef4444';
-            e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
-            e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.color = textSecondary;
-            e.currentTarget.style.borderColor = border;
-            e.currentTarget.style.background = 'transparent';
-          }}
-        >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Sign Out
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-import { fetchProjects } from '../../api/projects';
+import { AppContext } from '../../context/AppContext';
 import { fetchTasksByProject } from '../../api/tasks';
+import { useProjects } from '../../hooks/useProjects';
 import './DashboardHome.css';
 
 /* ─── Skeleton card ──────────────────────────────────────────────────────────── */
@@ -161,7 +161,8 @@ const StatPill = ({ icon, label, value, color }) => (
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
 const DashboardHome = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useContext(AppContext);
+  const { projects, loadProjects } = useProjects();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('today');
@@ -180,13 +181,8 @@ const DashboardHome = () => {
     setLoading(true);
     setError(null);
     try {
-      const projectList = await fetchProjects();
-      const proj = Array.isArray(projectList)
-        ? projectList
-        : projectList.results || projectList.projects || [];
-      // setProjects(proj); // Removed unused state
-
-      if (proj.length > 0) {
+      const proj = await loadProjects(false); // don't force, use cached
+      if (proj && proj.length > 0) {
         const allTasks = await Promise.all(
           proj.slice(0, 3).map(p =>
             fetchTasksByProject(p.id || p._id).catch(() => [])
@@ -202,7 +198,7 @@ const DashboardHome = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadProjects]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

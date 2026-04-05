@@ -1,14 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import api from '../../api/index';
 
-// Async thunk: calls the AI pipeline endpoint for a given project
+/**
+ * Redux async thunk — runs any agent type via the centralized endpoint.
+ * Payload: { projectId, type }
+ */
 export const runPipeline = createAsyncThunk(
   'agent/runPipeline',
-  async (projectId, { rejectWithValue }) => {
+  async ({ projectId, type = 'planner' }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/projects/${projectId}/run-pipeline/`
-      );
+      const response = await api.post('/agents/run', { projectId, type });
       return response.data;
     } catch (err) {
       return rejectWithValue(

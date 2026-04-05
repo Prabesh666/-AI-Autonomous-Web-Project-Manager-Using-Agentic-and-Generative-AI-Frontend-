@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
-
-const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+import api from '../api/index';
 
 export const useAutonomousController = () => {
   const [logs, setLogs] = useState([]);
@@ -69,39 +68,28 @@ export const useAutonomousController = () => {
 
     while (retries <= maxRetries && !fetchSuccess) {
       try {
-        const response = await fetch(`${API_BASE}/api/agents/run`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            type,
-            payload: { projectId }
-          })
+        const response = await api.post('/agents/run', {
+          projectId,
+          type,
         });
 
-        if (response.status === 401) {
+        responseData = response.data;
+        addLog("Backend Connected ✅");
+        fetchSuccess = true;
+
+      } catch (err) {
+        if (err.response?.status === 401) {
           addLog("❌ Failed at Auth (401 Unauthorized)");
           setState(prev => ({ ...prev, loading: false }));
           return statusObj;
         }
 
-        if (response.status === 500) {
+        if (err.response?.status === 500) {
           addLog("❌ Failed at Backend (500 Internal Server Error)");
           setState(prev => ({ ...prev, loading: false }));
           return statusObj; // Breaking on 500 backend error
         }
 
-        if (!response.ok) {
-          throw new Error(`HTTP network error ${response.status}`);
-        }
-
-        responseData = await response.json();
-        addLog("Backend Connected ✅");
-        fetchSuccess = true;
-
-      } catch (err) {
         retries++;
         if (retries > maxRetries) {
           addLog(`❌ Failed at Network Execution (Max retries reached)`);
@@ -164,19 +152,13 @@ export const useAutonomousController = () => {
     let dbSyncSuccess = false;
     try {
       const [tasksRes, reportsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/tasks/project/${projectId}`, { 
-          headers: { 'Authorization': `Bearer ${token}` } 
-        }),
-        fetch(`${API_BASE}/api/reports/${projectId}`, { 
-          headers: { 'Authorization': `Bearer ${token}` } 
-        })
+        api.get(`/tasks/project/${projectId}`),
+        api.get(`/reports/${projectId}`)
       ]);
 
-      if (tasksRes.ok && reportsRes.ok) {
-        const tasksData = await tasksRes.json();
-        const reportsData = await reportsRes.json();
+      const tasksData = tasksRes.data;
+      const reportsData = reportsRes.data;
         
-        // Ensure some data footprint exists
         if ((Array.isArray(tasksData) && tasksData.length > 0) || 
             (Array.isArray(tasksData.tasks) && tasksData.tasks.length > 0) ||
             tasksData.data?.length > 0 ||
@@ -184,7 +166,6 @@ export const useAutonomousController = () => {
             (Array.isArray(reportsData) && reportsData.length > 0)) {
            dbSyncSuccess = true;
         }
-      }
     } catch (err) {
       // Intentionally bypassed; if it fails, it cascades to the else block
     }

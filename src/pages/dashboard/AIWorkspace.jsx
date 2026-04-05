@@ -16,7 +16,7 @@ const AIWorkspace = () => {
   const { projects, loadProjects } = useProjects();
   const { tasks, loadTasks } = useTasks();
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const { loadingMap, resultsMap, executeAgent, clearResult } = useAgents();
+  const { loadingMap, resultsMap, executeAgent, clearResult, clearAll } = useAgents();
 
   useEffect(() => {
     if (projects.length === 0) loadProjects();
@@ -34,45 +34,27 @@ const AIWorkspace = () => {
       return;
     }
 
-    let payload = { projectId: selectedProjectId };
-
-    // Dynamically build payloads based on engine/agent requirements
+    // Build optional extra fields per engine type
+    let extra = {};
     if (type === 'scoring') {
-      // Precise payload mapping for Scoring Engine per Postman screenshot
-      const formattedTasks = tasks.map(t => ({
-        name: t.title || t.name || 'Untitled Task',
-        priority: t.priority || 'medium',
-        riskLevel: t.riskLevel || 'low'
-      }));
-      payload = { tasks: formattedTasks };
-    } else if (type === 'replanning') {
-      // Precise payload mapping for Replanning Engine per latest screenshot
-      const formattedTasks = tasks.map(t => ({
-        id: t._id || t.id || t.name,
-        dependencies: t.dependencies || []
-      }));
-      payload = { 
-        failedTaskId: formattedTasks[0]?.id || 'task_001', 
-        tasks: formattedTasks 
+      extra = {
+        tasks: tasks.map(t => ({
+          name: t.title || t.name || 'Untitled Task',
+          priority: t.priority || 'medium',
+          riskLevel: t.riskLevel || 'low',
+        }))
       };
+    } else if (type === 'replanning') {
+      const formatted = tasks.map(t => ({ id: t._id || t.id, dependencies: t.dependencies || [] }));
+      extra = { failedTaskId: formatted[0]?.id || 'task_001', tasks: formatted };
     } else if (type === 'dependency') {
-      // Precise payload mapping for Dependency Engine per latest screenshot
-      const formattedTasks = tasks.map(t => ({
-        id: t._id || t.id || t.name,
-        dependencies: t.dependencies || []
-      }));
-      payload = { tasks: formattedTasks };
-    } else {
-      payload = { ...payload, stage: 'start' };
+      extra = { tasks: tasks.map(t => ({ id: t._id || t.id, dependencies: t.dependencies || [] })) };
     }
 
     try {
-      // Final precision dispatch
-      let finalPayload = payload;
-      if (type === 'rule') finalPayload = { stage: 'start' };
-      
-      await executeAgent(type, finalPayload);
-      toast.success(`${type} module executed.`);
+      // Single standard call: POST /agents/run { projectId, type, ...extra }
+      await executeAgent(type, selectedProjectId, extra);
+      toast.success(`${type} agent executed successfully.`);
     } catch (err) {
       toast.error(err.message || `Failed to run ${type}.`);
     }
@@ -264,7 +246,7 @@ const AIWorkspace = () => {
                </svg>
                <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}>engine_execution.log</span>
              </div>
-             <button onClick={() => Object.keys(resultsMap).forEach(clearResult)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
+             <button onClick={clearAll} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
                [ clear ]
              </button>
           </div>

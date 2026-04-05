@@ -14,8 +14,8 @@ const useAiAgent = () => {
   const dispatch = useDispatch();
   const { isProcessing, result, error } = useSelector((state) => state.agent);
 
-  const handleRunPipeline = (projectId) => {
-    dispatch(runPipeline(projectId));
+  const handleRunPipeline = (projectId, type = 'planner') => {
+    dispatch(runPipeline({ projectId, type }));
   };
 
   return {

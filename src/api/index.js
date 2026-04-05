@@ -14,8 +14,10 @@ import axios from 'axios';
 
 // ─── Instance ─────────────────────────────────────────────────────────────────
 
+export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+
 const apiClient = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
+  baseURL: import.meta.env.DEV ? '/api' : `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

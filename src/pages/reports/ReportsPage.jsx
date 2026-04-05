@@ -101,7 +101,7 @@ const ReportsPage = () => {
     }
 
     try {
-      const result = await executeAgent('report', { projectId: selectedProject, stage: 'start' });
+      const result = await executeAgent('report', selectedProject);
       // Expecting { data: { title, content } } or similar from the AI agent response
       // Based on common patterns in this app's agents
       const reportData = result?.data?.report || result?.report || result;

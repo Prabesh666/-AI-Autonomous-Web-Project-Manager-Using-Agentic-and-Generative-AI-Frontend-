@@ -1,178 +1,139 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import Card from '../../components/ui/Card';
+import Badge from '../../components/ui/Badge';
+import EmptyState from '../../components/ui/EmptyState';
+import Button from '../../components/ui/Button';
 
-/* ══════════════════════════════════════════════════════
-   AI DECISION AGENT (AiDecisionPage)
-══════════════════════════════════════════════════════ */
+/**
+ * AI DECISION AGENT (AiDecisionPage)
+ * Displays AI-recommended actions and alternative strategies.
+ */
 const AiDecisionPage = () => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const alternatives = [
-    {
-      id: 1,
-      title: "Delay non-critical bug fixes",
-      desc: "Focus exclusively on feature parity for the upcoming release. Postpone 12 minor bugs to Sprint 5.",
-      probability: "82%",
-      tag: "LOW RISK",
-      color: '#3b82f6'
-    },
-    {
-      id: 2,
-      title: "Add automated QA tests",
-      desc: "Integrate Playwright tests for critical paths now to save 40+ hours in manual testing phase.",
-      probability: "75%",
-      tag: "HIGH EFFORT",
-      color: '#8b5cf6'
-    },
-    {
-      id: 3,
-      title: "Extend sprint by 2 days",
-      desc: "Push the sprint end date by 48 hours to ensure zero debt handover of the API documentation.",
-      probability: "60%",
-      tag: "MEDIUM RISK",
-      color: '#f59e0b'
-    }
-  ];
-
-  /* ── Styles ────────────────────────────────────── */
-  const cardStyle = {
-    background: isDark ? 'rgba(31, 41, 55, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'}`,
-    borderRadius: '20px',
-    padding: '1.5rem',
-    boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.3)' : '0 8px 24px rgba(0,0,0,0.04)',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  };
-
-  const heroStyle = {
-    background: isDark 
-      ? 'linear-gradient(135deg, #1e40af 0%, #1e1b4b 100%)' 
-      : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-    padding: '3rem 2.5rem',
-    borderRadius: '24px',
-    color: '#fff',
-    marginBottom: '2.5rem',
-    position: 'relative',
-    overflow: 'hidden',
-    boxShadow: '0 20px 50px rgba(37, 99, 235, 0.3)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '3rem',
-    flexWrap: 'wrap',
-    animation: 'heroSlideUp 0.6s ease-out',
-  };
-
-  const badgeStyle = (type) => ({
-    padding: '0.4rem 0.8rem',
-    background: 'rgba(255,255,255,0.15)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: '100px',
-    fontSize: '0.75rem',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: '#fff',
-  });
+  // State for decision alternatives - currently empty to handle non-mock data scenario
+  const [alternatives, setAlternatives] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recommendation, setRecommendation] = useState(null);
 
   return (
-    <div style={{ animation: 'fadeIn 0.4s ease-out', paddingBottom: '3rem' }}>
+    <div className="animate-fadeIn space-y-10 pb-16">
       
       {/* ── Recommendation Hero ✨ ────────────────── */}
-      <div style={heroStyle}>
-        <div style={{ flex: 1, minWidth: '300px', zIndex: 2 }}>
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <span style={badgeStyle()}>✨ AI Recommended Action</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)', marginTop: '0.4rem' }}>Updated 2m ago</span>
+      {recommendation ? (
+        <div className={`
+          relative overflow-hidden p-8 md:p-12 rounded-[2.5rem] text-white shadow-2xl
+          ${isDark ? 'bg-gradient-to-br from-blue-900 to-indigo-900' : 'bg-gradient-to-br from-blue-500 to-indigo-600'} 
+          flex flex-col md:flex-row items-center gap-8 md:gap-12 transition-all duration-500 hover:scale-[1.01]
+        `}>
+          <div className="flex-1 space-y-6">
+            <div className="flex gap-3 items-center">
+              <Badge variant="indigo" glow className="bg-white/20 text-white border-white/30">
+                ✨ AI Recommended Action
+              </Badge>
+              <span className="text-xs font-semibold text-white/60 uppercase tracking-widest">
+                Updated just now
+              </span>
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tight">
+              {recommendation.title}
+            </h1>
+            
+            <p className="text-lg text-white/90 leading-relaxed max-w-2xl">
+              {recommendation.description}
+            </p>
+            
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl shadow-black/10">
+                Accept Recommendation
+              </Button>
+              <Button variant="outline" size="lg" className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-md">
+                Explain Logic
+              </Button>
+            </div>
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-            Reallocate Backend Resources to Sprint 4
-          </h1>
-          <p style={{ fontSize: '1.15rem', opacity: 0.9, lineHeight: 1.6, marginBottom: '2rem', maxWidth: '650px' }}>
-            Sprinting towards the Alpha release? Shifting two developers from the maintenance backlog will reduce release risk by 18% with minimal downstream impact.
+
+          {/* Confidence Circle */}
+          <div className="relative flex-shrink-0 flex items-center justify-center w-56 h-56 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm animate-float">
+            <div className="absolute inset-0 rounded-full border-8 border-white/10 border-t-white animate-spin-slow" />
+            <div className="text-center">
+              <div className="text-5xl font-black text-white">{recommendation.confidence}%</div>
+              <div className="text-xs font-bold text-white/60 uppercase tracking-widest mt-1">Confidence</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={`
+          p-12 rounded-[2.5rem] text-center border-2 border-dashed
+          ${isDark ? 'bg-gray-800/20 border-gray-700/60' : 'bg-gray-50 border-gray-200'}
+        `}>
+          <div className="p-4 bg-blue-500/10 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-3">No Active Recommendations</h2>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed mb-8">
+            The decision engine needs more data to generate strategic optimizations. Execute more tasks or trigger the analysis pipeline to get started.
           </p>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button style={{
-              padding: '1rem 2rem',
-              background: '#fff',
-              color: '#2563eb',
-              border: 'none',
-              borderRadius: '12px',
-              fontWeight: 800,
-              fontSize: '1rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}>Accept Recommendation</button>
-            <button style={{
-              padding: '1rem 1.5rem',
-              background: 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              color: '#fff',
-              borderRadius: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              backdropFilter: 'blur(8px)',
-            }}>Ask AI Why?</button>
-          </div>
+          <Button variant="primary" onClick={() => window.location.href = '/ai-planning'}>
+            Execute AI Pipeline
+          </Button>
         </div>
-
-        {/* Confidence Meter */}
-        <div style={{ width: '220px', height: '220px', position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-           <div style={{ 
-             width: '180px', height: '180px', borderRadius: '50%', 
-             border: '10px solid rgba(255,255,255,0.1)', 
-             borderTopColor: '#fff',
-             display: 'flex', alignItems: 'center', justifyContent: 'center',
-             flexDirection: 'column',
-             animation: 'spinMeter 2s ease-out forwards'
-           }}>
-             <span style={{ fontSize: '3rem', fontWeight: 900 }}>94%</span>
-             <span style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.8, textTransform: 'uppercase' }}>Confidence</span>
-           </div>
-        </div>
-
-        {/* Animated Background Orbs */}
-        <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-20%', left: '10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
-      </div>
+      )}
 
       {/* ── Alternatives Section ──────────────────── */}
-      <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: isDark ? '#fff' : '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{ color: '#3b82f6' }}>⌥</span> Alternative Strategies
-      </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-        {alternatives.map(alt => (
-          <div key={alt.id} style={cardStyle} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-6px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${alt.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: alt.color }}>
-                {alt.id === 1 ? '🎯' : alt.id === 2 ? '⚙️' : '⏱️'}
-              </div>
-              <span style={{ 
-                padding: '0.35rem 0.75rem', borderRadius: '6px', background: `${alt.color}10`, color: alt.color, fontSize: '0.72rem', fontWeight: 800 
-              }}>{alt.tag}</span>
-            </div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: isDark ? '#f9fafb' : '#1e293b', marginBottom: '0.5rem' }}>{alt.title}</h3>
-            <p style={{ fontSize: '0.88rem', color: isDark ? '#9ca3af' : '#64748b', lineHeight: 1.6, marginBottom: '1.5rem' }}>{alt.desc}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: `1px solid ${isDark ? '#374151' : '#f1f5f9'}` }}>
-               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isDark ? '#6b7280' : '#94a3b8' }}>Success Probability</span>
-               <span style={{ fontSize: '1rem', fontWeight: 800, color: alt.color }}>{alt.probability}</span>
-            </div>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+          <span className="p-2 bg-blue-500/10 text-blue-500 rounded-xl">⌥</span>
+          Alternative Strategies
+        </h2>
+        
+        {alternatives.length === 0 ? (
+          <EmptyState 
+            title="None available"
+            description="The AI engine is currently only exploring the primary path based on the current project constraints."
+            className="!p-16"
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {alternatives.map(alt => (
+              <Card key={alt.id} hover className="!p-8 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-3 bg-blue-500/10 text-blue-500 rounded-[14px]">
+                      {alt.icon}
+                    </div>
+                    <Badge variant={alt.risk === 'LOW' ? 'success' : 'warning'} glow outline>
+                      {alt.risk} Risk
+                    </Badge>
+                  </div>
+                  
+                  <h3 className="text-xl font-extrabold text-gray-900 dark:text-white mb-3 leading-tight">
+                    {alt.title}
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-8">
+                    {alt.description}
+                  </p>
+                </div>
+                
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-sm">
+                  <span className="font-semibold text-gray-400">Success Propensity</span>
+                  <span className={`font-black text-lg ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{alt.probability}%</span>
+                </div>
+              </Card>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
       <style>{`
-        @keyframes heroSlideUp { 
-          from { opacity: 0; transform: translateY(30px); } 
-          to { opacity: 1; transform: translateY(0); } 
-        }
-        @keyframes spinMeter {
-          from { transform: rotate(-90deg); opacity: 0; }
-          to { transform: rotate(0deg); opacity: 1; }
-        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

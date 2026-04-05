@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { createProject } from '../../api/projects';
 import { runAgent } from '../../api/agents';
@@ -31,7 +31,7 @@ const GearIllustration = ({ isDark }) => (
 ════════════════════════════════════════════════════════ */
 const CreateProjectPage = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user } = useContext(AppContext);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 

@@ -1,10 +1,10 @@
 import { useContext } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { AppContext } from '../context/AppContext';
 import Loader from '../components/common/Loader'; // Assuming Loader exists based on AppRouter
 
 const PrivateRoute = ({ children }) => {
-  const { token, loading } = useContext(AuthContext);
+  const { token, loading } = useContext(AppContext);
 
   if (loading) {
     return <Loader />; // Or a simple loading spinner

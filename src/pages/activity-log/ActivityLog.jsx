@@ -1,63 +1,8 @@
 import { useState } from 'react';
 import './ActivityLog.css';
 
-const MOCK_ACTIVITIES = [
-  {
-    id: 1,
-    type: 'Task updated',
-    badge: 'NON-PRIORITY',
-    badgeType: 'warning',
-    description: 'Alex Rivera modified Homepage Redesign documentation',
-    time: '2 mins ago\n10:42 AM',
-    user: { name: 'Alex Rivera', avatar: 'AR' },
-    icon: '📝',
-    iconColor: 'blue'
-  },
-  {
-    id: 2,
-    type: 'AI Review completed',
-    badge: 'SYSTEM',
-    badgeType: 'success',
-    description: 'Automated code analysis finished for branch feature/auth',
-    time: '1 hour ago\n09:15 AM',
-    user: { name: 'System', avatar: 'AI' },
-    icon: '🧠',
-    iconColor: 'green'
-  },
-  {
-    id: 3,
-    type: 'New project created',
-    badge: '',
-    badgeType: '',
-    description: 'Sarah Johnson initialized "Q4 Marketing Campaign"',
-    time: '3 hours ago\n07:30 AM',
-    user: { name: 'Sarah Johnson', avatar: 'SJ' },
-    icon: '➕',
-    iconColor: 'blue'
-  },
-  {
-    id: 4,
-    type: 'New user invited',
-    badge: '',
-    badgeType: '',
-    description: 'Marcus Chen invited liam.smith@company.com to Team Alpha',
-    time: '5 hours ago\n05:12 AM',
-    user: { name: 'Marcus Chen', avatar: 'MC' },
-    icon: '👤',
-    iconColor: 'blue'
-  },
-  {
-    id: 5,
-    type: 'Connection error detected',
-    badge: 'CRITICAL',
-    badgeType: 'danger',
-    description: 'Database connection timeout on production cluster node-2',
-    time: 'Yesterday\n11:45 PM',
-    user: { name: 'System Error', avatar: '❌' },
-    icon: '⚠️',
-    iconColor: 'red'
-  }
-];
+// Real backend integration pending or to be populated
+const activities = [];
 
 const ActivityLog = () => {
   const [selectedIds, setSelectedIds] = useState([]);
@@ -68,7 +13,7 @@ const ActivityLog = () => {
       setSelectedIds([]);
       setSelectAll(false);
     } else {
-      setSelectedIds(MOCK_ACTIVITIES.map(a => a.id));
+      setSelectedIds(activities.map(a => a.id));
       setSelectAll(true);
     }
   };
@@ -79,7 +24,7 @@ const ActivityLog = () => {
       : [...selectedIds, id];
     
     setSelectedIds(newSelected);
-    setSelectAll(newSelected.length === MOCK_ACTIVITIES.length);
+    setSelectAll(newSelected.length === activities.length && activities.length > 0);
   };
 
   return (
@@ -119,7 +64,12 @@ const ActivityLog = () => {
         </div>
 
         <div className="activity-list">
-          {MOCK_ACTIVITIES.map(activity => (
+          {activities.length === 0 ? (
+            <div className="no-activities-msg" style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+              No activities found.
+            </div>
+          ) : (
+            activities.map(activity => (
             <div key={activity.id} className={`activity-item ${selectedIds.includes(activity.id) ? 'selected' : ''}`}>
               <div className="activity-left">
                 <input 
@@ -155,7 +105,8 @@ const ActivityLog = () => {
                 </div>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="activity-log-footer">

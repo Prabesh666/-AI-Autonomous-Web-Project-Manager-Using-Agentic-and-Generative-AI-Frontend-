@@ -17,12 +17,8 @@ const AiDecisionPage = lazy(() => import('../pages/ai-decision/AiDecisionPage'))
 const ProjectListPage = lazy(() => import('../pages/projects/ProjectListPage'));
 const ProjectDetailsPage = lazy(() => import('../pages/projects/ProjectDetailsPage'));
 const CreateProjectPage = lazy(() => import('../pages/projects/CreateProjectPage'));
-const AiLoadingPage = lazy(() => import('../pages/ai-states/AiLoadingPage'));
-const AiErrorPage = lazy(() => import('../pages/ai-states/AiErrorPage'));
 const AiMemoryPage = lazy(() => import('../pages/ai-memory/AiMemoryPage'));
 const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'));
-
-const TestDashboard = lazy(() => import('../pages/TestDashboard'));
 import PrivateRoute from '../components/PrivateRoute';
 
 const AppRouter = () => {
@@ -41,17 +37,19 @@ const AppRouter = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/projects/new" element={<CreateProjectPage />} />
-            <Route path="/ai-review" element={<AiReviewPage />} />
+            {/* AI pages — ai-review requires a projectId to run the agent */}
+            <Route path="/ai-review/:projectId" element={<AiReviewPage />} />
+            <Route path="/ai-review" element={<Navigate to="/projects" replace />} />
             <Route path="/ai-decision" element={<AiDecisionPage />} />
-            <Route path="/ai-loading" element={<AiLoadingPage />} />
-            <Route path="/ai-error" element={<AiErrorPage />} />
             <Route path="/ai-memory" element={<AiMemoryPage />} />
             <Route path="/reports" element={<ReportsPage />} />
-            {/* Future nested routes could go here */}
+            {/* Project routes */}
             <Route path="/projects" element={<ProjectListPage />} />
             <Route path="/projects/:id" element={<ProjectDetailsPage />} />
-            <Route path="/test-dashboard" element={<TestDashboard />} />
+            {/* Redirects for removed / legacy paths */}
             <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/ai-loading" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/ai-error" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

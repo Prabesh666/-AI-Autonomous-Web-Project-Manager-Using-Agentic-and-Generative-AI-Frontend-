@@ -6,33 +6,19 @@ import Navbar from './Navbar';
 
 const DashboardLayout = () => {
   const { theme } = useTheme();
-
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      width: '100%',
-      overflow: 'hidden',
-      background: theme === 'dark' ? '#0d1117' : '#f8fafc',
-      fontFamily: 'Inter, sans-serif',
-    }}>
+    <div className={`flex h-screen w-full overflow-hidden font-sans ${theme === 'dark' ? 'bg-[#0d1117]' : 'bg-[#f8fafc]'}`}>
 
       {/* ── Sidebar ──────────────────────────────── */}
-      <Sidebar />
-
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* ── Main content area ─────────────────────── */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        flex: 1,
-        minWidth: 0,
-        overflow: 'hidden',
-      }}>
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
 
         {/* Top Navbar */}
-        <Navbar />
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
 
         {/* Page Content */}

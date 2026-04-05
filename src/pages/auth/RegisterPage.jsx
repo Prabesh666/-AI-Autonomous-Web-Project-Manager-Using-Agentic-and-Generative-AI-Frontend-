@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../api/auth';
 import { useTheme } from '../../context/ThemeContext';
+import { AppContext } from '../../context/AppContext';
+import { API_BASE_URL } from '../../api/index';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -13,6 +15,7 @@ const RegisterPage = () => {
   const [successMsg, setSuccessMsg] = useState('');
 
   const navigate = useNavigate();
+  const { login } = useContext(AppContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,12 +26,19 @@ const RegisterPage = () => {
     try {
       const data = await registerUser({ name, email, password });
       // If the backend returns success:
-      if (data.message === "User registered successfully" || data.user) {
-         setSuccessMsg(data.message || 'User registered successfully!');
-         // Auto redirect to login after 1.5 seconds if successful
-         setTimeout(() => {
-           navigate('/login');
-         }, 1500);
+      if (data.message === "User registered successfully" || data.user || data.token) {
+        setSuccessMsg(data.message || 'User registered successfully!');
+        if (data.token) {
+          login(data.token, data.user);
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1000);
+        } else {
+          // Auto redirect to login after 1.5 seconds if successful and no token returned
+          setTimeout(() => {
+            navigate('/login');
+          }, 1500);
+        }
       } else {
          setErrorMsg(data.message || 'Registration failed.');
       }
@@ -149,7 +159,7 @@ const RegisterPage = () => {
                 type="button" 
                 className="social-btn google-btn" 
                 aria-label="Sign in with Google"
-                onClick={() => window.location.href = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}/api/auth/google`}
+                onClick={() => window.location.href = `${API_BASE_URL}/api/auth/google`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -162,7 +172,7 @@ const RegisterPage = () => {
                 type="button" 
                 className="social-btn github-btn" 
                 aria-label="Sign in with GitHub"
-                onClick={() => window.location.href = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}/api/auth/github`}
+                onClick={() => window.location.href = `${API_BASE_URL}/api/auth/github`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.254-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.376.202 2.394.1 2.646.64.699 1.026 1.591 1.026 2.682 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
