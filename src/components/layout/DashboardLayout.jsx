@@ -3,30 +3,48 @@ import { Outlet } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import ChatbotWidget from './ChatbotWidget';
 
 const DashboardLayout = () => {
   const { theme } = useTheme();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isDark = theme === 'dark';
+
+  // Only used for mobile overlay toggle
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className={`flex h-screen w-full overflow-hidden font-sans ${theme === 'dark' ? 'bg-[#0d1117]' : 'bg-[#f8fafc]'}`}>
+    <div style={{
+      display: 'flex',
+      width: '100%',
+      height: '100vh',
+      overflow: 'hidden',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      background: isDark ? '#0d1117' : '#f8fafc',
+    }}>
 
-      {/* ── Sidebar ──────────────────────────────── */}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      {/* ── Sidebar — always visible on desktop ─── */}
+      <Sidebar
+        isMobileOpen={isMobileOpen}
+        onMobileClose={() => setIsMobileOpen(false)}
+      />
 
-      {/* ── Main content area ─────────────────────── */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
-
+      {/* ── Main content ──────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+      }}>
         {/* Top Navbar */}
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
-
+        <Navbar onMenuClick={() => setIsMobileOpen(true)} />
 
         {/* Page Content */}
         <main style={{
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          background: theme === 'dark' ? '#0d1117' : '#f8fafc',
+          background: isDark ? '#0d1117' : '#f8fafc',
         }}>
           <div style={{
             maxWidth: '1600px',
@@ -37,6 +55,9 @@ const DashboardLayout = () => {
           </div>
         </main>
       </div>
+
+      {/* ── Chatbot — floats over all pages ─── */}
+      <ChatbotWidget />
     </div>
   );
 };

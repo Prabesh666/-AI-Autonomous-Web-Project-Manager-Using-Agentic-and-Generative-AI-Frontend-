@@ -17,7 +17,7 @@ import axios from 'axios';
 export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : `${API_BASE_URL}/api`,
+  baseURL: import.meta.env.DEV ? '/api/v1' : `${API_BASE_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -44,7 +44,7 @@ apiClient.interceptors.request.use(
 // ─── Response Interceptor ─────────────────────────────────────────────────────
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => response.data,
   (error) => {
     const status = error.response?.status;
     const serverMessage =

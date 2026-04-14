@@ -11,8 +11,9 @@ export const useTasks = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchTasksByProject(projectId);
-      // Normalize: API may return { tasks: [] }, { results: [] }, or a plain array
+      const resp = await fetchTasksByProject(projectId);
+      // Normalize: API may return { success: true, data: { tasks: [] } } or { tasks: [] } or a plain array
+      const data = resp?.data || resp;
       const list = Array.isArray(data) ? data
         : Array.isArray(data?.tasks) ? data.tasks
         : Array.isArray(data?.results) ? data.results : [];
@@ -77,8 +78,8 @@ export const useTasks = () => {
   const getGroupedTasks = () => {
     return tasks.reduce((grouped, task) => {
       const status = task.status || 'pending';
-      const normalizedStatus = status.toLowerCase() === 'in-progress' ? 'in-progress' : 
-                               status.toLowerCase() === 'completed' ? 'completed' : 'pending';
+      const normalizedStatus = (status.toLowerCase() === 'in-progress' || status.toLowerCase() === 'doing') ? 'in-progress' : 
+                               (status.toLowerCase() === 'completed' || status.toLowerCase() === 'done') ? 'completed' : 'pending';
       
       if (!grouped[normalizedStatus]) {
         grouped[normalizedStatus] = [];

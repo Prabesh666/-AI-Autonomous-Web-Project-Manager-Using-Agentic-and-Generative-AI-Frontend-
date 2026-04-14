@@ -22,9 +22,9 @@ const ProjectDetailsPage = () => {
   const isDark = theme === 'dark';
   const toast = useToast();
 
-  const { projects, loadProjects } = useProjects();
+  const { projects, loadProjects, loadProjectById } = useProjects();
   const { tasks, loading, error, loadTasks, addTask, editTaskContent, removeTask, getGroupedTasks } = useTasks();
-  const { loadingMap, resultsMap, errorMap, executeAgent } = useAgents();
+  const { loadingMap, resultsMap, errorMap, executeAgent, pollJobStatus } = useAgents();
 
   const [project, setProject] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,12 +36,24 @@ const ProjectDetailsPage = () => {
 
   /* Load project info */
   useEffect(() => {
-    if (projects.length === 0) loadProjects();
-    else {
+    const fetchProj = async () => {
+      // 1. Check local cache
       const found = projects.find(p => p._id === id || p.id === id);
-      if (found) setProject(found);
-    }
-  }, [id, projects, loadProjects]);
+      if (found) {
+        setProject(found);
+      } else {
+        // 2. Fetch from server if not in cache (or if cache is empty)
+        try {
+          const fetched = await loadProjectById(id);
+          if (fetched) setProject(fetched);
+        } catch (err) {
+          console.error("Project not found on server:", err);
+        }
+      }
+    };
+
+    if (id) fetchProj();
+  }, [id, projects, loadProjectById]);
 
   /* Load tasks */
   useEffect(() => { if (id) loadTasks(id); }, [id, loadTasks]);
@@ -80,25 +92,41 @@ const ProjectDetailsPage = () => {
       await new Promise(resolve => setTimeout(resolve, 600));
       setPipelineState(prev => ({ ...prev, logs: [...prev.logs, '[⟳] Analyzing Project Scope and Objectives...'] }));
 
-      // Single standardized call: POST /agents/run { type, projectId }
-      const result = await executeAgent('planner', id);
+      // 1. Queue the AI job via POST /agents/run
+      const queuedData = await executeAgent('planner', id, { 
+        prompt: project?.description || `Generate a plan for ${project?.name || 'this project'}` 
+      });
 
-      const generatedPlan = result?.data?.planner?.plan || result?.planner?.plan || [];
-      const generatedTasks = result?.data?.tasks?.tasks || result?.tasks?.tasks || [];
+      // Backend wraps: { success: true, data: { jobId, status: "queued" } }
+      const jobId = queuedData?.data?.jobId || queuedData?.jobId;
+      if (!jobId) throw new Error("Job orchestration failed to return a tracking ID.");
 
       setPipelineState(prev => ({
         ...prev,
-        logs: [...prev.logs, `[✔] Strategic Plan Generated: ${generatedPlan.length} overarching steps.`]
+        logs: [...prev.logs, `[⟳] AI Job Enqueued. Waiting for worker to process...`]
       }));
 
-      if (generatedTasks.length > 0) {
-        setPipelineState(prev => ({
-          ...prev,
-          logs: [...prev.logs, `[⟳] Backend provisioned ${generatedTasks.length} tasks — syncing board...`]
-        }));
-      }
+      // 2. Poll until the background worker finishes (max 60s)
+      const completedJob = await pollJobStatus('planner', jobId, 2500, 24);
 
-      // Reload tasks from backend (backend saves them; we do NOT re-save client-side)
+      // 3. Read results from the completed job record
+      const taskCount = completedJob?.result?.taskCount || 0;
+      const riskCount = completedJob?.result?.riskCount || 0;
+      const tier = completedJob?.result?.tier || 'L0';
+
+      setPipelineState(prev => ({
+        ...prev,
+        logs: [
+          ...prev.logs,
+          `[✔] AI Pipeline Completed (Tier: ${tier})`,
+          `[✔] Planner Agent → Strategic development plan generated.`,
+          taskCount > 0 ? `[✔] Task Agent → ${taskCount} tasks provisioned.` : `[⟳] Task Agent → Completed.`,
+          riskCount > 0 ? `[✔] Risk Agent → ${riskCount} risks identified.` : `[⟳] Risk Agent → Completed.`,
+          `[⟳] Syncing Kanban Board...`
+        ]
+      }));
+
+      // 4. Reload tasks from the now-updated database
       await loadTasks(id);
 
       setPipelineState({
@@ -107,12 +135,16 @@ const ProjectDetailsPage = () => {
         logs: [
           '[i] Initializing AI Engine...',
           '[⟳] Analyzing Project Scope and Objectives...',
-          `[✔] Strategic Plan Generated: ${generatedPlan.length} overarching steps.`,
-          `[✔] Synced ${generatedTasks.length} tasks from backend.`,
+          `[⟳] AI Job Enqueued. Waiting for worker to process...`,
+          `[✔] AI Pipeline Completed (Tier: ${tier})`,
+          `[✔] Planner Agent → Strategic development plan generated.`,
+          taskCount > 0 ? `[✔] Task Agent → ${taskCount} tasks provisioned.` : `[⟳] Task Agent → Completed.`,
+          riskCount > 0 ? `[✔] Risk Agent → ${riskCount} risks identified.` : `[⟳] Risk Agent → Completed.`,
+          `[✔] Synced ${taskCount} tasks from backend.`,
           '[★] Workflow Automation Finished. View your tasks on the Kanban Board.'
         ]
       });
-      toast.success('AI Workflow deployed successfully!');
+      toast.success(`AI Workflow complete! ${taskCount} tasks generated.`);
 
     } catch (err) {
       setPipelineState(prev => ({
@@ -123,6 +155,7 @@ const ProjectDetailsPage = () => {
       toast.error('Workflow failed');
     }
   };
+
 
   const groupedTasks = getGroupedTasks();
   const todoTasks = groupedTasks['pending'] || [];
@@ -395,10 +428,21 @@ const ProjectDetailsPage = () => {
                 <div className="kanban-cards">
                   {todoTasks.map((task) => (
                     <div key={task._id || task.id} className="task-card">
-                      <span className="badge bd-orange outline">Priority</span>
-                      <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span className={`badge bd-${task.priority === 'high' || task.priority === 'critical' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue'} outline`}>
+                            {task.priority || 'Medium'}
+                          </span>
+                          {task.riskLevel && (
+                            <span className={`badge bd-${task.riskLevel === 'high' ? 'red' : task.riskLevel === 'medium' ? 'orange' : 'green'} outline`} style={{ opacity: 0.8 }}>
+                              Risk: {task.riskLevel}
+                            </span>
+                          )}
+                        </div>
+                        <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
+                          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                        </button>
+                      </div>
                       <h4>{task.title}</h4>
                       <p className="card-desc">{task.description}</p>
                       
@@ -431,10 +475,21 @@ const ProjectDetailsPage = () => {
                 <div className="kanban-cards">
                   {inProgressTasks.map((task) => (
                     <div key={task._id || task.id} className="task-card">
-                      <span className="badge bd-orange outline">Priority</span>
-                      <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span className={`badge bd-${task.priority === 'high' || task.priority === 'critical' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue'} outline`}>
+                            {task.priority || 'Medium'}
+                          </span>
+                          {task.riskLevel && (
+                            <span className={`badge bd-${task.riskLevel === 'high' ? 'red' : task.riskLevel === 'medium' ? 'orange' : 'green'} outline`} style={{ opacity: 0.8 }}>
+                              Risk: {task.riskLevel}
+                            </span>
+                          )}
+                        </div>
+                        <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
+                          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                        </button>
+                      </div>
                       <h4>{task.title}</h4>
                       <p className="card-desc">{task.description}</p>
                       
@@ -469,10 +524,21 @@ const ProjectDetailsPage = () => {
                 <div className="kanban-cards">
                   {reviewTasks.map((task) => (
                     <div key={task._id || task.id} className="task-card">
-                      <span className="badge bd-orange outline">Priority</span>
-                      <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span className={`badge bd-${task.priority === 'high' || task.priority === 'critical' ? 'red' : task.priority === 'medium' ? 'orange' : 'blue'} outline`}>
+                            {task.priority || 'Medium'}
+                          </span>
+                          {task.riskLevel && (
+                            <span className={`badge bd-${task.riskLevel === 'high' ? 'red' : task.riskLevel === 'medium' ? 'orange' : 'green'} outline`} style={{ opacity: 0.8 }}>
+                              Risk: {task.riskLevel}
+                            </span>
+                          )}
+                        </div>
+                        <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
+                          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                        </button>
+                      </div>
                       <h4>{task.title}</h4>
                       <p className="card-desc">{task.description}</p>
                       

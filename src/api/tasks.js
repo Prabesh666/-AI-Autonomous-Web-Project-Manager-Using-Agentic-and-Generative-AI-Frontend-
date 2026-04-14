@@ -6,8 +6,7 @@ import api from './index';
  * @returns {Promise<any[]>}
  */
 export const fetchTasksByProject = async (projectId) => {
-  const response = await api.get(`/tasks/project/${projectId}`);
-  return response.data;
+  return api.get(`/tasks/project/${projectId}`);
 };
 
 /**
@@ -16,8 +15,7 @@ export const fetchTasksByProject = async (projectId) => {
  * @returns {Promise<any>}
  */
 export const createTask = async (data) => {
-  const response = await api.post('/tasks', data);
-  return response.data;
+  return api.post('/tasks', data);
 };
 
 /**
@@ -27,8 +25,7 @@ export const createTask = async (data) => {
  * @returns {Promise<any>}
  */
 export const updateTask = async (id, data) => {
-  const response = await api.put(`/tasks/${id}`, data);
-  return response.data;
+  return api.put(`/tasks/${id}`, data);
 };
 
 /**
@@ -37,7 +34,6 @@ export const updateTask = async (id, data) => {
  * @returns {Promise<any>}
  */
 export const deleteTask = async (id) => {
-  const response = await api.delete(`/tasks/${id}`);
-  return response.data;
+  return api.delete(`/tasks/${id}`);
 };
 

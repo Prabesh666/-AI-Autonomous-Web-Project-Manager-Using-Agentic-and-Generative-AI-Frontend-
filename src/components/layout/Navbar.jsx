@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,6 +26,15 @@ const Navbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [avatarEmoji, setAvatarEmoji] = useState(() => localStorage.getItem('userAvatarEmoji') || null);
+
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      setAvatarEmoji(localStorage.getItem('userAvatarEmoji'));
+    };
+    window.addEventListener('avatarUpdate', handleAvatarUpdate);
+    return () => window.removeEventListener('avatarUpdate', handleAvatarUpdate);
+  }, []);
 
   /* Determine breadcrumb label from current path */
   const pathname = location.pathname;
@@ -58,25 +67,8 @@ const Navbar = ({ onMenuClick }) => {
 
       {/* ── Left: breadcrumb ──────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        {/* Mobile Menu Button */}
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-2 -ml-2 rounded-lg"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: theme === 'dark' ? '#9ca3af' : '#6b7280',
-            cursor: 'pointer',
-          }}
-          aria-label="Open menu"
-        >
-          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-
         {/* Page breadcrumb */}
-        <div className="hidden sm:flex" style={{
+        <div style={{
           fontSize: '0.82rem',
           color: theme === 'dark' ? '#6b7280' : '#9ca3af',
           display: 'flex', alignItems: 'center', gap: '0.375rem'
@@ -183,16 +175,16 @@ const Navbar = ({ onMenuClick }) => {
           <div style={{
             width: '34px', height: '34px',
             borderRadius: '50%',
-            background: avatarBg,
-            color: '#fff',
+            background: avatarEmoji ? (theme === 'dark' ? '#1f2937' : '#f3f4f6') : avatarBg,
+            color: avatarEmoji ? 'inherit' : '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.75rem', fontWeight: 700,
+            fontSize: avatarEmoji ? '1.45rem' : '0.75rem', fontWeight: 700,
             flexShrink: 0,
-            boxShadow: `0 0 0 3px ${avatarBg}30`,
+            boxShadow: avatarEmoji ? `0 0 0 3px ${theme === 'dark' ? '#374151' : '#e5e7eb'}` : `0 0 0 3px ${avatarBg}30`,
           }}>
-            {initials}
+            {avatarEmoji || initials}
           </div>
-          <div style={{ textAlign: 'left' }} className="hidden md:block">
+          <div style={{ textAlign: 'left' }}>
             <p style={{
               fontSize: '0.82rem', fontWeight: 700,
               color: theme === 'dark' ? '#f9fafb' : '#111827',
@@ -210,7 +202,6 @@ const Navbar = ({ onMenuClick }) => {
           </div>
           <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
             style={{ color: theme === 'dark' ? '#6b7280' : '#9ca3af', flexShrink: 0 }}
-            className="hidden md:block"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>

@@ -7,6 +7,7 @@ export const useProjects = () => {
     projectsLoading,
     projectsError,
     loadProjects,
+    loadProjectById,
     addProject,
     editProject,
     removeProject
@@ -17,6 +18,7 @@ export const useProjects = () => {
     loading: projectsLoading,
     error: projectsError,
     loadProjects,
+    loadProjectById,
     addProject,
     editProject,
     removeProject

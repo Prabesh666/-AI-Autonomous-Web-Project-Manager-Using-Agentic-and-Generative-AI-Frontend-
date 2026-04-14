@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../api/auth';
 import { useTheme } from '../../context/ThemeContext';
@@ -24,12 +24,16 @@ const RegisterPage = () => {
     setSuccessMsg('');
 
     try {
-      const data = await registerUser({ name, email, password });
-      // If the backend returns success:
-      if (data.message === "User registered successfully" || data.user || data.token) {
-        setSuccessMsg(data.message || 'User registered successfully!');
-        if (data.token) {
-          login(data.token, data.user);
+      const result = await registerUser({ name, email, password });
+      
+      if (result.success || result.user || result.data?.user) {
+        setSuccessMsg(result.message || 'User registered successfully!');
+        
+        const userData = result.data?.user || result.user;
+        const tokenData = result.data?.token || result.token;
+
+        if (tokenData) {
+          login(tokenData, userData);
           setTimeout(() => {
             navigate('/dashboard');
           }, 1000);
@@ -40,7 +44,7 @@ const RegisterPage = () => {
           }, 1500);
         }
       } else {
-         setErrorMsg(data.message || 'Registration failed.');
+         setErrorMsg(result.message || 'Registration failed.');
       }
 
     } catch (err) {

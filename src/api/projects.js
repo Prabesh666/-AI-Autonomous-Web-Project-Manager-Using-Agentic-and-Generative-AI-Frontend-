@@ -5,8 +5,7 @@ import api from './index';
  * @returns {Promise<any[]>}
  */
 export const fetchProjects = async () => {
-  const response = await api.get('/projects');
-  return response.data;
+  return api.get('/projects');
 };
 
 /**
@@ -15,8 +14,7 @@ export const fetchProjects = async () => {
  * @returns {Promise<any>}
  */
 export const fetchProjectById = async (id) => {
-  const response = await api.get(`/projects/${id}`);
-  return response.data;
+  return api.get(`/projects/${id}`);
 };
 
 /**
@@ -25,8 +23,7 @@ export const fetchProjectById = async (id) => {
  * @returns {Promise<any>}
  */
 export const createProject = async (data) => {
-  const response = await api.post('/projects', data);
-  return response.data;
+  return api.post('/projects', data);
 };
 
 /**
@@ -36,8 +33,7 @@ export const createProject = async (data) => {
  * @returns {Promise<any>}
  */
 export const updateProject = async (id, data) => {
-  const response = await api.put(`/projects/${id}`, data);
-  return response.data;
+  return api.put(`/projects/${id}`, data);
 };
 
 /**
@@ -46,7 +42,6 @@ export const updateProject = async (id, data) => {
  * @returns {Promise<any>}
  */
 export const deleteProject = async (id) => {
-  const response = await api.delete(`/projects/${id}`);
-  return response.data;
+  return api.delete(`/projects/${id}`);
 };
 

@@ -4,6 +4,7 @@ import Loader from '../components/common/Loader';
 
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
 const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 
 const DashboardLayout = lazy(() => import('../components/layout/DashboardLayout'));
@@ -29,6 +30,7 @@ const AppRouter = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           
           <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="/dashboard" element={<DashboardHome />} />

@@ -6,8 +6,7 @@ import api from './index';
  * @returns {Promise<any>}
  */
 export const registerUser = async (data) => {
-  const response = await api.post('/auth/register', data);
-  return response.data;
+  return api.post('/auth/register', data);
 };
 
 /**
@@ -16,7 +15,17 @@ export const registerUser = async (data) => {
  * @returns {Promise<any>}
  */
 export const loginUser = async (data) => {
-  const response = await api.post('/auth/login', data);
-  return response.data;
+  return api.post('/auth/login', data);
 };
 
+export const requestOtp = async (email) => {
+  return api.post('/auth/request-otp', { email });
+};
+
+export const verifyOtp = async (data) => {
+  return api.post('/auth/verify-otp', data);
+};
+
+export const resetPasswordWithOtp = async (data) => {
+  return api.post('/auth/reset-password-otp', data);
+};

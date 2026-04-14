@@ -91,7 +91,7 @@ const aiItems = [
   },
 ];
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const { user, logout } = useContext(AppContext);
   const { projects } = useProjects();
   const { theme } = useTheme();
@@ -107,6 +107,9 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  // On narrow screens ( < 768px), sidebar becomes an overlay drawer
+  const isNarrow = typeof window !== 'undefined' && window.innerWidth < 768;
+
   const isDark = theme === 'dark';
   const bg            = isDark ? '#0f172a' : '#ffffff'; // Deep Slate 900
   const border        = isDark ? '#1e293b' : '#e5e7eb'; // Slate 800
@@ -117,6 +120,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const activeText    = isDark ? '#60a5fa' : '#2563eb'; // Brighter blue for dark mode
 
   const sidebarStyle = {
+    // Always visible on desktop as a permanent flex column
     position: 'relative',
     width: '260px',
     flexShrink: 0,
@@ -125,7 +129,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     flexDirection: 'column',
     background: bg,
     borderRight: `1px solid ${border}`,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    zIndex: 10,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   };
 
   const NavGroup = ({ label, items }) => (
@@ -180,22 +187,20 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
-          onClick={onClose}
+      {/* Mobile Backdrop — only shown when drawer is open on small screens */}
+      {isMobileOpen && (
+        <div
+          onClick={onMobileClose}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 40,
+          }}
         />
       )}
 
-      <aside 
-        style={sidebarStyle}
-        className={`
-          fixed inset-y-0 left-0 z-50 md:relative md:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          shadow-2xl md:shadow-none
-        `}
-      >
+      <aside style={sidebarStyle}>
         {/* Logo */}
         <div style={{
           display: 'flex',
@@ -225,16 +230,6 @@ const Sidebar = ({ isOpen, onClose }) => {
               </p>
             </div>
           </div>
-          
-          {/* Mobile Close Button */}
-          <button 
-            onClick={onClose}
-            className="md:hidden p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Navigation */}
@@ -275,7 +270,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            + New Project
+             New Project
           </button>
 
           <button

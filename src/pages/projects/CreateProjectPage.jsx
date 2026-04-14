@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { createProject } from '../../api/projects';
-import { runAgent } from '../../api/agents';
+import { runAgent, getAgentJobStatus } from '../../api/agents';
 import './CreateProjectPage.css';
 
 /* ── Template prompts ──────────────────────────────── */
@@ -37,49 +37,82 @@ const CreateProjectPage = () => {
 
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [statusText, setStatusText] = useState('');
+  const [step, setStep] = useState(0); // 0=idle 1=creating 2=AI running 3=done
   const [error, setError] = useState('');
+
+  // step labels
+  const STEPS = [
+    { label: 'Creating project record...', icon: '📁' },
+    { label: 'AI generating tasks & milestones...', icon: '⚡' },
+    { label: 'Done! Taking you to your project...', icon: '✅' },
+  ];
+
+  /* ── Poll job until done ─────────────────────────── */
+  const pollJob = (jobId, interval = 2500, max = 24) =>
+    new Promise((resolve, reject) => {
+      let attempts = 0;
+      const tick = async () => {
+        attempts++;
+        try {
+          const res = await getAgentJobStatus(jobId);
+          const job = res?.data || res;
+          if (job.status === 'completed') return resolve(job);
+          if (job.status === 'failed')    return reject(new Error(job.error?.message || 'AI job failed'));
+          if (attempts >= max)            return resolve(job); // timeout — navigate anyway
+          setTimeout(tick, interval);
+        } catch (e) { reject(e); }
+      };
+      tick();
+    });
 
   /* ── Generate handler ────────────────────────────── */
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
+    setStep(1);
     setError('');
 
     try {
       /* Step 1: create the project */
-      setStatusText('Creating project...');
-      const project = await createProject({
+      const result = await createProject({
         name: prompt.slice(0, 80),
         description: prompt,
         created_by: user?.email,
       });
 
-      const projectId = project?.id || project?._id || project?.project?.id || project?.project?._id || project?.data?.id || project?.data?._id;
+      const projectData = result?.data || result;
+      const projectId   = projectData?._id || projectData?.id;
+      if (!projectId) throw new Error('Project created but no ID returned from server.');
 
-      /* Step 2: run AI agent to generate milestones + tasks */
-      setStatusText('AI is generating milestones and tasks...');
-      await runAgent('planner', {
-        projectId,
-        prompt,
-      });
+      /* Step 2: enqueue AI agent */
+      setStep(2);
+      const agentRes = await runAgent('planner', projectId, { prompt });
+      const jobId    = agentRes?.data?.jobId || agentRes?.jobId;
 
-      setStatusText('Done! Redirecting...');
-      setTimeout(() => {
-        navigate(projectId ? `/projects/${projectId}` : '/projects');
-      }, 600);
+      if (jobId) {
+        /* Step 2b: poll until the job finishes */
+        await pollJob(jobId);
+      }
+
+      /* Step 3: done */
+      setStep(3);
+      setTimeout(() => navigate(`/projects/${projectId}`), 800);
 
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || err.message || 'Failed to generate project. Please try again.');
+      const serverData = err?.response?.data;
+      const detailedError = Array.isArray(serverData?.errors)
+        ? serverData.errors.map(e => e.message).join(', ')
+        : serverData?.message || err.message || 'Failed to generate project. Please try again.';
+      setError(detailedError);
       setIsGenerating(false);
-      setStatusText('');
+      setStep(0);
     }
   };
 
   const handleCancel = () => {
     setIsGenerating(false);
-    setStatusText('');
+    setStep(0);
     setError('');
   };
 
@@ -162,12 +195,38 @@ const CreateProjectPage = () => {
             )}
           </div>
 
-          {/* Status text while generating */}
-          {isGenerating && statusText && (
-            <p className="status-message">
-              <span className="pulse-dot" /> {statusText}
-            </p>
+          {/* Step progress while generating */}
+          {isGenerating && (
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {STEPS.map((s, i) => {
+                const idx = i + 1;
+                const isDone    = step > idx;
+                const isActive  = step === idx;
+                const isPending = step < idx;
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.6rem 0.875rem', borderRadius: 10,
+                    background: isDone ? 'rgba(16,185,129,0.08)' : isActive ? 'rgba(99,102,241,0.08)' : 'transparent',
+                    border: `1px solid ${ isDone ? 'rgba(16,185,129,0.2)' : isActive ? 'rgba(99,102,241,0.2)' : 'transparent'}`,
+                    transition: 'all 0.3s',
+                    opacity: isPending ? 0.4 : 1,
+                  }}>
+                    <span style={{ fontSize: '1rem' }}>
+                      {isDone ? '✅' : isActive ? s.icon : '○'}
+                    </span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: isDone ? '#10b981' : isActive ? '#6366f1' : 'inherit' }}>
+                      {s.label}
+                    </span>
+                    {isActive && (
+                      <div style={{ marginLeft: 'auto', width: 14, height: 14, border: '2px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
           {/* Quick Templates */}
           <div className="quick-templates">

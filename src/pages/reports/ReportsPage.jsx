@@ -33,7 +33,7 @@ const ReportsPage = () => {
   const [success, setSuccess] = useState('');
   const [formError, setFormError] = useState('');
 
-  const { loadingMap, executeAgent } = useAgents();
+  const { loadingMap, executeAgent, pollJobStatus } = useAgents();
   const toast = useToast();
 
   /* ── Load projects ─────────────────────────────── */
@@ -58,6 +58,7 @@ const ReportsPage = () => {
     try {
       const data = await fetchReports(pid);
       const list = Array.isArray(data) ? data
+        : Array.isArray(data?.data) ? data.data
         : Array.isArray(data?.reports) ? data.reports
         : Array.isArray(data?.results) ? data.results : [];
       setReports(list);
@@ -101,17 +102,31 @@ const ReportsPage = () => {
     }
 
     try {
-      const result = await executeAgent('report', selectedProject);
-      // Expecting { data: { title, content } } or similar from the AI agent response
-      // Based on common patterns in this app's agents
-      const reportData = result?.data?.report || result?.report || result;
+      toast.info('Initializing AI Report Agent...');
+      
+      const queuedData = await executeAgent('report', selectedProject);
+      const jobId = queuedData?.data?.jobId || queuedData?.jobId;
+      
+      if (!jobId) throw new Error("Job orchestration failed to return a tracking ID.");
+
+      toast.info('AI is drafting the report. Please wait...');
+      
+      // We pass the type 'report' but note the hook's executeAgent/pollJobStatus might use the agent router's output structure
+      const completedJob = await pollJobStatus('report', jobId, 2500, 24);
+      
+      // The worker returns { report: { reportData: { title, content } } } inside completedJob.result
+      const reportData = completedJob?.result?.report?.reportData || {};
       
       if (reportData?.title) setTitle(reportData.title);
       if (reportData?.content) setContent(reportData.content);
       
-      toast.success('AI Report generated successfully!');
-    } catch {
-      toast.error('Failed to generate AI report.');
+      if (reportData?.title && reportData?.content) {
+        toast.success('AI Report generated successfully!');
+      } else {
+        throw new Error('AI returned an empty report structure.');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to generate AI report.');
     }
   };
 

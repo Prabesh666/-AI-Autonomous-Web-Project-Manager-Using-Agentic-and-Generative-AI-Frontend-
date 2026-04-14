@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { AppContext } from '../../context/AppContext';
@@ -25,11 +25,11 @@ const LoginPage = () => {
     setSuccessMsg('');
 
     try {
-      const data = await loginUser({ email, password });
-      setSuccessMsg(data.message || 'Login successful!');
+      const result = await loginUser({ email, password });
+      setSuccessMsg(result.message || 'Login successful!');
       
-      if (data.token) {
-        login(data.token, data.user);
+      if (result.success && result.data?.token) {
+        login(result.data.token, result.data.user);
         navigate('/dashboard');
       } else {
         throw new Error('No token received from server.');
@@ -102,7 +102,7 @@ const LoginPage = () => {
             <div className="form-group">
               <div className="password-labels">
                 <label htmlFor="password">Password</label>
-                <a href="#" className="forgot-link">Forgot password?</a>
+                <a href="#" className="forgot-link" onClick={(e) => { e.preventDefault(); navigate('/forgot-password'); }}>Forgot password?</a>
               </div>
               <div className="password-input-wrapper">
                 <input

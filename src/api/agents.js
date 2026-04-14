@@ -10,10 +10,18 @@ import api from './index';
  * @returns {Promise<any>}
  */
 export const runAgent = async (type, projectId, extra = {}) => {
-  const response = await api.post('/agents/run', {
+  return api.post('/agents/run', {
     projectId,
     type,
     ...extra,
   });
-  return response.data;
+};
+
+/**
+ * Get results/status of a specific AI job.
+ * @param {string} jobId 
+ * @returns {Promise<any>}
+ */
+export const getAgentJobStatus = async (jobId) => {
+  return api.get(`/agents/status/${jobId}`);
 };

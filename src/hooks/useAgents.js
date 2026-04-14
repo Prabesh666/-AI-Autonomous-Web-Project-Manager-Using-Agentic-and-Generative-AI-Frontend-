@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { runAgent } from '../api/agents';
+import { runAgent, getAgentJobStatus } from '../api/agents';
 
 /**
  * Centralized AI state hook.
@@ -10,6 +10,41 @@ export const useAgents = () => {
   const [loadingMap, setLoadingMap] = useState({});
   const [resultsMap, setResultsMap] = useState({});
   const [errorMap, setErrorMap] = useState({});
+
+  /**
+   * Status Polling logic.
+   * Continues until status is 'completed' or 'failed'.
+   */
+  const pollJobStatus = useCallback(async (type, jobId, interval = 2000, maxAttempts = 30) => {
+    let attempts = 0;
+    
+    return new Promise((resolve, reject) => {
+      const check = async () => {
+        attempts++;
+        try {
+          const res = await getAgentJobStatus(jobId);
+          const job = res?.data || res;
+          
+          if (job.status === 'completed') {
+            setResultsMap(prev => ({ ...prev, [type]: job.result }));
+            resolve(job);
+          } else if (job.status === 'failed') {
+            const msg = job.error?.message || 'Agent job failed';
+            setErrorMap(prev => ({ ...prev, [type]: msg }));
+            reject(new Error(msg));
+          } else if (attempts >= maxAttempts) {
+            reject(new Error('Job polling timed out. Results may still be processing in background.'));
+          } else {
+            setTimeout(check, interval);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+      
+      check();
+    });
+  }, []);
 
   /**
    * Run an agent/engine via the centralized /agents/run endpoint.
@@ -36,6 +71,8 @@ export const useAgents = () => {
       setErrorMap(prev => ({ ...prev, [type]: msg }));
       throw err;
     } finally {
+      // We don't set loading false yet if it's queued, 
+      // but usually the caller handles the next steps.
       setLoadingMap(prev => ({ ...prev, [type]: false }));
     }
   }, []);
@@ -57,6 +94,7 @@ export const useAgents = () => {
     resultsMap,
     errorMap,
     executeAgent,
+    pollJobStatus,
     clearResult,
     clearAll,
   };

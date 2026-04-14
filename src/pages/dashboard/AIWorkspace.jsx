@@ -16,17 +16,20 @@ const AIWorkspace = () => {
   const { projects, loadProjects } = useProjects();
   const { tasks, loadTasks } = useTasks();
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const { loadingMap, resultsMap, executeAgent, clearResult, clearAll } = useAgents();
+  const { loadingMap, executeAgent, pollJobStatus, clearAll } = useAgents();
 
   useEffect(() => {
     if (projects.length === 0) loadProjects();
   }, [projects, loadProjects]);
 
   useEffect(() => {
-    if (selectedProjectId) {
-      loadTasks(selectedProjectId);
-    }
+    if (selectedProjectId) loadTasks(selectedProjectId);
   }, [selectedProjectId, loadTasks]);
+
+  const [consoleLogs, setConsoleLogs] = useState([]);   // live terminal output
+  const [activeJob, setActiveJob]     = useState(null);  // { type, jobId }
+
+  const addLog = (line) => setConsoleLogs(prev => [...prev, { ts: new Date().toLocaleTimeString(), line }]);
 
   const handleRunEngine = async (type) => {
     if (!selectedProjectId) {
@@ -37,13 +40,7 @@ const AIWorkspace = () => {
     // Build optional extra fields per engine type
     let extra = {};
     if (type === 'scoring') {
-      extra = {
-        tasks: tasks.map(t => ({
-          name: t.title || t.name || 'Untitled Task',
-          priority: t.priority || 'medium',
-          riskLevel: t.riskLevel || 'low',
-        }))
-      };
+      extra = { tasks: tasks.map(t => ({ name: t.title || 'Untitled', priority: t.priority || 'medium', riskLevel: t.riskLevel || 'low' })) };
     } else if (type === 'replanning') {
       const formatted = tasks.map(t => ({ id: t._id || t.id, dependencies: t.dependencies || [] }));
       extra = { failedTaskId: formatted[0]?.id || 'task_001', tasks: formatted };
@@ -51,14 +48,45 @@ const AIWorkspace = () => {
       extra = { tasks: tasks.map(t => ({ id: t._id || t.id, dependencies: t.dependencies || [] })) };
     }
 
+    addLog(`[▶] Initializing ${type.toUpperCase()} agent...`);
+    setActiveJob({ type });
+
     try {
-      // Single standard call: POST /agents/run { projectId, type, ...extra }
-      await executeAgent(type, selectedProjectId, extra);
-      toast.success(`${type} agent executed successfully.`);
+      // 1. Queue the job
+      const queuedData = await executeAgent(type, selectedProjectId, extra);
+      const jobId = queuedData?.data?.jobId || queuedData?.jobId;
+
+      if (!jobId) {
+        addLog(`[✔] Agent executed synchronously.`);
+        addLog(`[★] Done.`);
+        setActiveJob(null);
+        toast.success(`${type} agent completed.`);
+        return;
+      }
+
+      addLog(`[⟳] Job enqueued (ID: ${jobId.substring(0,12)}…). Waiting for worker...`);
+      setActiveJob({ type, jobId });
+
+      // 2. Poll until done (2.5s interval, 24 attempts = ~60s max)
+      const completedJob = await pollJobStatus(type, jobId, 2500, 24);
+
+      const result = completedJob?.result || {};
+      addLog(`[✔] ${type.toUpperCase()} agent completed successfully.`);
+      if (result.taskCount)  addLog(`[✔] Tasks generated: ${result.taskCount}`);
+      if (result.riskCount)  addLog(`[✔] Risks identified: ${result.riskCount}`);
+      if (result.tier)       addLog(`[✔] Processing tier: ${result.tier}`);
+      addLog(`[★] Result stored. Check the project Kanban for updates.`);
+
+      setActiveJob(null);
+      toast.success(`${type} agent finished successfully!`);
+
     } catch (err) {
+      addLog(`[✖] ERROR: ${err.message || 'Agent execution failed'}`);
+      setActiveJob(null);
       toast.error(err.message || `Failed to run ${type}.`);
     }
   };
+
 
   /* ── Styles ────────────────────────────────────── */
   const cardStyle = {
@@ -177,17 +205,17 @@ const AIWorkspace = () => {
               <p style={{ fontSize: '0.78rem', color: isDark ? '#9ca3af' : '#64748b', lineHeight: 1.4, marginBottom: '1rem' }}>{agent.desc}</p>
               <button
                 onClick={() => handleRunEngine(agent.id)}
-                disabled={loadingMap[agent.id] || !selectedProjectId}
+                disabled={!!activeJob || !selectedProjectId}
                 style={{
                   width: '100%', padding: '0.5rem',
-                  background: loadingMap[agent.id] || !selectedProjectId ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(139, 92, 246, 0.1)',
-                  border: `1px solid ${loadingMap[agent.id] || !selectedProjectId ? 'transparent' : 'rgba(139, 92, 246, 0.4)'}`,
-                  color: loadingMap[agent.id] || !selectedProjectId ? (isDark ? '#6b7280' : '#94a3b8') : '#8b5cf6',
+                  background: (!!activeJob || !selectedProjectId) ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(139, 92, 246, 0.1)',
+                  border: `1px solid ${(!!activeJob || !selectedProjectId) ? 'transparent' : 'rgba(139, 92, 246, 0.4)'}`,
+                  color: (!!activeJob || !selectedProjectId) ? (isDark ? '#6b7280' : '#94a3b8') : '#8b5cf6',
                   borderRadius: '6px', fontWeight: 600, fontSize: '0.8rem',
-                  cursor: loadingMap[agent.id] || !selectedProjectId ? 'not-allowed' : 'pointer'
+                  cursor: (!!activeJob || !selectedProjectId) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {loadingMap[agent.id] ? 'Running...' : 'Run Agent'}
+                {activeJob?.type === agent.id ? 'Running...' : 'Run Agent'}
               </button>
             </div>
           ))}
@@ -215,18 +243,18 @@ const AIWorkspace = () => {
               </p>
               <button
                 onClick={() => handleRunEngine(engine.id)}
-                disabled={loadingMap[engine.id] || !selectedProjectId}
+                disabled={!!activeJob || !selectedProjectId}
                 style={{
                   width: '100%', padding: '0.75rem',
-                  background: loadingMap[engine.id] || !selectedProjectId ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(59, 130, 246, 0.1)',
-                  border: `1px solid ${loadingMap[engine.id] || !selectedProjectId ? 'transparent' : 'rgba(59, 130, 246, 0.4)'}`,
-                  color: loadingMap[engine.id] || !selectedProjectId ? (isDark ? '#6b7280' : '#94a3b8') : '#3b82f6',
+                  background: (!!activeJob || !selectedProjectId) ? (isDark ? '#374151' : '#e2e8f0') : 'rgba(59, 130, 246, 0.1)',
+                  border: `1px solid ${(!!activeJob || !selectedProjectId) ? 'transparent' : 'rgba(59, 130, 246, 0.4)'}`,
+                  color: (!!activeJob || !selectedProjectId) ? (isDark ? '#6b7280' : '#94a3b8') : '#3b82f6',
                   borderRadius: '8px', fontWeight: 600,
-                  cursor: loadingMap[engine.id] || !selectedProjectId ? 'not-allowed' : 'pointer',
+                  cursor: (!!activeJob || !selectedProjectId) ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s'
                 }}
               >
-                {loadingMap[engine.id] ? 'Executing...' : `Execute ${engine.name}`}
+                {activeJob?.type === engine.id ? 'Executing...' : `Execute ${engine.name}`}
               </button>
             </div>
           ))}
@@ -234,7 +262,7 @@ const AIWorkspace = () => {
       </div>
 
       {/* ── Console Output Area ──────────────────────── */}
-      {Object.keys(resultsMap).length > 0 && (
+      {consoleLogs.length > 0 && (
         <div style={{
           background: '#0f172a', borderRadius: '14px', border: '1px solid #1e293b', 
           boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden', animation: 'fadeIn 0.4s ease-out'
@@ -244,23 +272,31 @@ const AIWorkspace = () => {
                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2z" />
                </svg>
-               <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}>engine_execution.log</span>
+               <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}>agent_output.log</span>
+               {activeJob && <span style={{ fontSize: '0.72rem', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', padding: '0.1rem 0.5rem', borderRadius: 20, marginLeft: 4 }}>● running</span>}
              </div>
-             <button onClick={clearAll} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
+             <button onClick={() => setConsoleLogs([])} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
                [ clear ]
              </button>
           </div>
-          <div style={{ padding: '1.5rem', maxHeight: '400px', overflowY: 'auto' }}>
-            {Object.entries(resultsMap).map(([key, data]) => (
-              <div key={key} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px dashed #334155' }}>
-                <div style={{ color: '#3b82f6', marginBottom: '0.8rem', fontWeight: 700, fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                  &gt; Output stream for [{key}] module at {new Date().toLocaleTimeString()}
-                </div>
-                <pre style={{ margin: 0, color: '#10b981', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                  {JSON.stringify(data?.data || data, null, 2)}
-                </pre>
+          <div style={{ padding: '1.25rem 1.5rem', maxHeight: '360px', overflowY: 'auto' }}>
+            {consoleLogs.map((entry, i) => (
+              <div key={i} style={{ display: 'flex', gap: '1rem', marginBottom: '0.35rem', fontFamily: 'monospace', fontSize: '0.83rem' }}>
+                <span style={{ color: '#475569', flexShrink: 0 }}>{entry.ts}</span>
+                <span style={{
+                  color: entry.line.startsWith('[✔]') || entry.line.startsWith('[★]') ? '#10b981'
+                       : entry.line.startsWith('[✖]') ? '#ef4444'
+                       : entry.line.startsWith('[⟳]') ? '#60a5fa'
+                       : '#94a3b8'
+                }}>{entry.line}</span>
               </div>
             ))}
+            {activeJob && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.2s infinite' }} />
+                <span style={{ color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.83rem' }}>Waiting for worker response...</span>
+              </div>
+            )}
           </div>
         </div>
       )}

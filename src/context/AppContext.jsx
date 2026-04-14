@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
-import { fetchProjects as apiFetchProjects, createProject as apiCreateProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject } from '../api/projects';
+import { fetchProjects as apiFetchProjects, fetchProjectById as apiFetchProjectById, createProject as apiCreateProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject } from '../api/projects';
 
 export const AppContext = createContext();
 
@@ -66,10 +66,12 @@ export const AppProvider = ({ children }) => {
     setProjectsLoading(true);
     setProjectsError(null);
     try {
-      const data = await apiFetchProjects();
-      const list = Array.isArray(data) ? data
-        : Array.isArray(data?.projects) ? data.projects
-        : Array.isArray(data?.results) ? data.results : [];
+      const response = await apiFetchProjects();
+      const list = Array.isArray(response) ? response
+        : Array.isArray(response?.data?.projects) ? response.data.projects
+        : Array.isArray(response?.data) ? response.data
+        : Array.isArray(response?.projects) ? response.projects
+        : Array.isArray(response?.results) ? response.results : [];
       setProjects(list);
       setProjectsLoaded(true);
       return list;
@@ -85,8 +87,8 @@ export const AppProvider = ({ children }) => {
 
   const addProject = async (projectData) => {
     try {
-      const data = await apiCreateProject(projectData);
-      const newProject = data?.project || data?.data || data;
+      const response = await apiCreateProject(projectData);
+      const newProject = response?.data || response?.project || response;
       setProjects((prev) => [...prev, newProject]);
       return newProject;
     } catch (err) {
@@ -97,8 +99,8 @@ export const AppProvider = ({ children }) => {
 
   const editProject = async (id, projectData) => {
     try {
-      const data = await apiUpdateProject(id, projectData);
-      const updatedProject = data?.project || data?.data || data;
+      const response = await apiUpdateProject(id, projectData);
+      const updatedProject = response?.data || response?.project || response;
       setProjects((prev) => 
         prev.map(p => p._id === id || p.id === id ? updatedProject : p)
       );
@@ -120,6 +122,24 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const loadProjectById = useCallback(async (id) => {
+    try {
+      const response = await apiFetchProjectById(id);
+      const projectData = response?.data || response;
+      if (projectData) {
+        setProjects((prev) => {
+          const exists = prev.find(p => p._id === id || p.id === id);
+          if (exists) return prev.map(p => (p._id === id || p.id === id) ? projectData : p);
+          return [...prev, projectData];
+        });
+      }
+      return projectData;
+    } catch (err) {
+      console.error('Failed to load project by ID:', err);
+      throw err;
+    }
+  }, []);
+
   return (
     <AppContext.Provider 
       value={{ 
@@ -127,7 +147,7 @@ export const AppProvider = ({ children }) => {
         user, token, loading, login, logout,
         // Projects
         projects, projectsLoading, projectsError,
-        loadProjects, addProject, editProject, removeProject
+        loadProjects, loadProjectById, addProject, editProject, removeProject
       }}
     >
       {children}

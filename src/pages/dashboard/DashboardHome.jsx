@@ -181,16 +181,23 @@ const DashboardHome = () => {
     setLoading(true);
     setError(null);
     try {
-      const proj = await loadProjects(false); // don't force, use cached
+      const proj = await loadProjects(false);
       if (proj && proj.length > 0) {
-        const allTasks = await Promise.all(
-          proj.slice(0, 3).map(p =>
-            fetchTasksByProject(p.id || p._id).catch(() => [])
+        const allTaskResponses = await Promise.all(
+          proj.slice(0, 5).map(p =>
+            fetchTasksByProject(p.id || p._id).catch(() => null)
           )
         );
-        const flat = allTasks.flat();
-        const normalized = Array.isArray(flat) ? flat : flat.tasks || flat.results || [];
-        setTasks(normalized);
+        // Each response is { tasks: [...], total } or { data: { tasks } } or plain array
+        const flat = allTaskResponses.flatMap(r => {
+          if (!r) return [];
+          if (Array.isArray(r)) return r;
+          if (Array.isArray(r?.tasks)) return r.tasks;
+          if (Array.isArray(r?.data?.tasks)) return r.data.tasks;
+          if (Array.isArray(r?.data)) return r.data;
+          return [];
+        });
+        setTasks(flat);
       }
     } catch (err) {
       console.error(err);
@@ -227,8 +234,9 @@ const DashboardHome = () => {
 
   /* ── stats ──────────────────────────────────────────────────────────────── */
   const totalTasks  = tasks.length;
-  const doneTasks   = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
-  const highPrio    = tasks.filter(t => (t.priority || '').toLowerCase() === 'high').length;
+  const doneTasks   = tasks.filter(t => ['done','completed'].includes((t.status || '').toLowerCase())).length;
+  const inProgCount = tasks.filter(t => ['in-progress','in_progress','doing','active'].includes((t.status || '').toLowerCase())).length;
+  const highPrio    = tasks.filter(t => (t.priority || '').toLowerCase() === 'high' || (t.priority || '').toLowerCase() === 'critical').length;
   const completion  = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   /* ─────────────────────────────────────────────────────────────────────── */
@@ -280,10 +288,10 @@ const DashboardHome = () => {
 
       {/* ── Stats row ──────────────────────────────────────────────────── */}
       <div className="stats-row">
-        <StatPill icon="📋" label="Total Tasks"    value={totalTasks}  color="blue"   />
-        <StatPill icon="✅" label="Completed"       value={doneTasks}   color="green"  />
-        <StatPill icon="⚡" label="High Priority"  value={highPrio}    color="orange" />
-        <StatPill icon="📈" label="Completion"      value={`${completion}%`} color="purple" />
+        <StatPill icon="📁" label="Projects"      value={projects?.length || 0}  color="blue"   />
+        <StatPill icon="📋" label="Total Tasks"   value={totalTasks}             color="purple" />
+        <StatPill icon="🔄" label="In Progress"   value={inProgCount}            color="orange" />
+        <StatPill icon="✅" label="Completed"      value={doneTasks}              color="green"  />
       </div>
 
       {/* ── Error banner ───────────────────────────────────────────────── */}
