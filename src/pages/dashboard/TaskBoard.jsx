@@ -7,10 +7,12 @@ import './TaskBoard.css';
 
 const TaskBoard = () => {
   const { projects, loadProjects } = useProjects();
-  const { tasks, loadTasks, getGroupedTasks, addTask, editTaskContent, loading, error } = useTasks();
+  const { tasks, loadTasks, getGroupedTasks, addTask, editTaskContent, editTaskStatus, loading, error } = useTasks();
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [draggedTaskId, setDraggedTaskId] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -42,6 +44,55 @@ const TaskBoard = () => {
       console.error('Failed to save task:', err);
       toast.error(err.message || 'Failed to save task');
     }
+  };
+
+  // --- Drag and Drop Handlers ---
+  const handleDragStart = (e, taskId) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    // Firefox requires data to be set to drag
+    e.dataTransfer.setData('text/plain', taskId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragOver = (e, columnStatus) => {
+    e.preventDefault(); // Necessary to allow dropping
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverColumn !== columnStatus) {
+      setDragOverColumn(columnStatus);
+    }
+  };
+
+  const handleDragLeave = (e, columnStatus) => {
+    e.preventDefault();
+    if (dragOverColumn === columnStatus) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = async (e, columnStatus) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const dropTaskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
+    if (!dropTaskId) return;
+
+    const task = tasks.find(t => (t._id === dropTaskId || t.id === dropTaskId));
+    if (!task) return;
+
+    if (task.status !== columnStatus) {
+      try {
+        await editTaskStatus(dropTaskId, columnStatus);
+        const statusLabel = columnStatus === 'pending' ? 'To-Do' : columnStatus === 'in-progress' ? 'In Progress' : 'Review';
+        toast.success(`Task moved to ${statusLabel}`);
+      } catch (err) {
+        toast.error('Failed to move task.');
+      }
+    }
+    setDraggedTaskId(null);
   };
 
   const groupedTasks = getGroupedTasks();
@@ -82,7 +133,12 @@ const TaskBoard = () => {
 
       <div className="kanban-scroll-container">
         {/* TO-DO COLUMN */}
-        <div className="kanban-column">
+        <div 
+          className={`kanban-column ${dragOverColumn === 'pending' ? 'drag-over' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'pending')}
+          onDragLeave={(e) => handleDragLeave(e, 'pending')}
+          onDrop={(e) => handleDrop(e, 'pending')}
+        >
           <div className="column-header">
             <h3>To-Do <span className="count">{todoTasks.length}</span></h3>
             <button className="add-btn" onClick={() => { setEditingTask(null); setIsModalOpen(true); }} aria-label="Add Task">
@@ -92,7 +148,13 @@ const TaskBoard = () => {
           
           <div className="kanban-cards">
             {todoTasks.map((task) => (
-              <div key={task._id || task.id} className="task-card">
+              <div 
+                key={task._id || task.id} 
+                className={`task-card ${draggedTaskId === (task._id || task.id) ? 'dragging' : ''}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, task._id || task.id)}
+                onDragEnd={handleDragEnd}
+              >
                 <span className="badge bd-orange outline">Priority</span>
                 <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
@@ -118,7 +180,12 @@ const TaskBoard = () => {
         </div>
 
         {/* IN PROGRESS COLUMN */}
-        <div className="kanban-column">
+        <div 
+          className={`kanban-column ${dragOverColumn === 'in-progress' ? 'drag-over' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'in-progress')}
+          onDragLeave={(e) => handleDragLeave(e, 'in-progress')}
+          onDrop={(e) => handleDrop(e, 'in-progress')}
+        >
           <div className="column-header">
             <h3>In Progress <span className="count bg-blue">{inProgressTasks.length}</span></h3>
             <button className="add-btn" onClick={() => { setEditingTask(null); setIsModalOpen(true); }} aria-label="Add Task">
@@ -128,7 +195,13 @@ const TaskBoard = () => {
           
           <div className="kanban-cards">
             {inProgressTasks.map((task) => (
-              <div key={task._id || task.id} className="task-card">
+              <div 
+                key={task._id || task.id} 
+                className={`task-card ${draggedTaskId === (task._id || task.id) ? 'dragging' : ''}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, task._id || task.id)}
+                onDragEnd={handleDragEnd}
+              >
                 <span className="badge bd-orange outline">Priority</span>
                 <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
@@ -152,7 +225,12 @@ const TaskBoard = () => {
         </div>
 
         {/* REVIEW COLUMN */}
-        <div className="kanban-column">
+        <div 
+          className={`kanban-column ${dragOverColumn === 'completed' ? 'drag-over' : ''}`}
+          onDragOver={(e) => handleDragOver(e, 'completed')}
+          onDragLeave={(e) => handleDragLeave(e, 'completed')}
+          onDrop={(e) => handleDrop(e, 'completed')}
+        >
           <div className="column-header">
             <h3>Review <span className="count">{reviewTasks.length}</span></h3>
             <button className="add-btn" onClick={() => { setEditingTask(null); setIsModalOpen(true); }} aria-label="Add Task">
@@ -162,7 +240,13 @@ const TaskBoard = () => {
           
           <div className="kanban-cards">
             {reviewTasks.map((task) => (
-              <div key={task._id || task.id} className="task-card">
+              <div 
+                key={task._id || task.id} 
+                className={`task-card ${draggedTaskId === (task._id || task.id) ? 'dragging' : ''}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, task._id || task.id)}
+                onDragEnd={handleDragEnd}
+              >
                 <span className="badge bd-orange outline">Priority</span>
                 <button className="options-btn" onClick={() => { setEditingTask(task); setIsModalOpen(true); }} aria-label="Options">
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>

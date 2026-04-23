@@ -25,10 +25,10 @@
 |:---|:---|
 | **🎨 Premium UI** | Stunning Kanban Board with glassmorphism, smooth animations, and a polished dark/light mode system. |
 | **🤖 AI Integration** | Intelligent project workflows including AI Strategic Planning, automated Task Generation, and Decision Auditing. |
+| **🖱️ Native Drag & Drop** | High-performance Kanban board with native HTML5 Drag and Drop for seamless task movement. |
+| **🔐 Social OAuth** | Seamless authentication via Google and GitHub with secure JWT-based handshake. |
 | **📱 Full Responsive** | Seamless experience across all devices, from ultra-wide monitors to mobile smartphones. |
-| **⚡ High Performance** | Powered by Vite 6 with aggressive code splitting and lazy loading for near-instant page transitions. |
-| **🔐 Secure Auth** | Flexible authentication layer supporting Email/Password and social OAuth (Google/GitHub). |
-| **🐳 DevOps Ready** | Fully Dockerized with multi-stage builds and Nginx optimization, plus automated CI/CD pipelines. |
+| **⚡ High Performance** | Powered by Vite 6 with aggressive code-splitting for near-instant transitions. |
 
 ---
 
@@ -39,7 +39,7 @@ This platform is more than just a task tracker — it's a **Next-Generation Auto
 ### Key Workflows:
 - **Strategic AI Planner**: Convert high-level project goals into actionable 3-phase roadmaps.
 - **Intelligent Decision Engine**: Audit AI decisions with alternative strategy analysis and memory persistence.
-- **Enterprise Kanban**: Advanced task board with real-time status tracking and premium aesthetics.
+- **Enterprise Kanban**: Advanced task board with real-time status tracking, native drag-and-drop, and premium aesthetics.
 
 > [!TIP]
 > **Best for**: Technical Leaders, AI System Designers, and Product Managers who need an intelligent interface for autonomous workflows.
@@ -53,13 +53,13 @@ src/
 ├── api/                  # Centralized Axios interceptors & state-driven API modules
 ├── components/           
 │   ├── layout/           # Global Sidebar, Topbar, and Theme Providers
-│   └── ui/               # Reusable atomic design components
+│   └── ui/               # Reusable atomic design components (GlassBox, PremiumButton)
 ├── context/              # Authentication, Theme, and Toast global state
 ├── hooks/                # Custom business logic (useTasks, useProjects, etc.)
 ├── pages/                
-│   ├── auth/             # LoginPage, RegisterPage
-│   ├── projects/         # Kanban Board, Create Project Wizard
-│   ├── dashboard/        # Intelligent Workspace & Metrics
+│   ├── auth/             # LoginPage, RegisterPage, OAuthCallbackPage
+│   ├── projects/         # Create Project Wizard, Project Details
+│   ├── dashboard/        # Intelligent Kanban Workspace & Metrics
 │   └── ai-modules/       # Strategy Planning, Decision Audits, & AI Memory
 └── styles/               # Design tokens & Global CSS variable system
 ```
@@ -70,11 +70,11 @@ src/
 
 - **Framework**: [React 19](https://react.dev) (Functional Components, Hooks)
 - **Tooling**: [Vite 6](https://vitejs.dev) (Lightning fast HMR)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com) + [CSS Variables Design System]
+- **Styling**: Vanilla CSS (Premium Custom Design System)
 - **Routing**: [React Router 7](https://reactrouter.com) (Data-aware routing)
 - **API**: [Axios](https://axios-http.com) (Standardized interceptors)
-- **Icons**: Custom SVG + Optimized Feather set
-- **Charts**: Data visualization for AI insights
+- **Icons**: Custom SVG + Lucide set
+- **Charts**: Data visualization for AI insights (Recharts)
 
 ---
 
@@ -112,7 +112,11 @@ npm install
 ### 3. Configuration
 Create a `.env` file in the root:
 ```env
-VITE_BACKEND_URL=https://ai-autonomous-backend.onrender.com
+# Local Development
+VITE_BACKEND_URL=http://localhost:5001/api/v1
+
+# Production
+# VITE_BACKEND_URL=https://your-production-backend.com/api/v1
 ```
 
 ### 4. Development Launch
@@ -123,7 +127,6 @@ npm run dev
 ## 👨‍💻 Developer and Researcher 
 
 **Prabesh Shah**
-
 
 * Building autonomous and scalable systems
 

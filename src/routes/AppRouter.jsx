@@ -5,6 +5,7 @@ import Loader from '../components/common/Loader';
 const LoginPage = lazy(() => import('../pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
+const OAuthCallbackPage = lazy(() => import('../pages/auth/OAuthCallbackPage'));
 const LandingPage = lazy(() => import('../pages/landing/LandingPage'));
 
 const DashboardLayout = lazy(() => import('../components/layout/DashboardLayout'));
@@ -31,6 +32,10 @@ const AppRouter = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          {/* OAuth callbacks - backend redirects to /auth/success or /auth/failure */}
+          <Route path="/auth/success" element={<OAuthCallbackPage />} />
+          <Route path="/auth/failure" element={<OAuthCallbackPage />} />
+          <Route path="/auth/callback" element={<OAuthCallbackPage />} />
           
           <Route element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
             <Route path="/dashboard" element={<DashboardHome />} />
