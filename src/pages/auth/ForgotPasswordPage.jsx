@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { requestOtp, verifyOtp, resetPasswordWithOtp } from '../../api/auth';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 
 const ForgotPasswordPage = () => {
   const [step, setStep] = useState(1);
@@ -17,6 +18,7 @@ const ForgotPasswordPage = () => {
   
   const navigate = useNavigate();
   const { login } = useContext(AppContext);
+  const toast = useToast();
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
@@ -27,9 +29,12 @@ const ForgotPasswordPage = () => {
     try {
       await requestOtp(email);
       setSuccessMsg('A 6-digit recovery code has been sent to your email.');
+      toast.success('A 6-digit recovery code has been sent to your email.');
       setStep(2);
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to send OTP. Please ensure the email is correct.');
+      const msg = err.message || 'Failed to send OTP. Please ensure the email is correct.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -44,9 +49,12 @@ const ForgotPasswordPage = () => {
     try {
       await verifyOtp({ email, otp });
       setSuccessMsg('Code verified. Please enter your new password.');
+      toast.success('Code verified. Please enter your new password.');
       setStep(3);
     } catch (err) {
-      setErrorMsg(err.message || 'Invalid or expired OTP. Please try again.');
+      const msg = err.message || 'Invalid or expired OTP. Please try again.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -61,6 +69,7 @@ const ForgotPasswordPage = () => {
     try {
       const result = await resetPasswordWithOtp({ email, otp, password: newPassword });
       setSuccessMsg(result.message || 'Password reset successfully!');
+      toast.success(result.message || 'Password reset successfully!');
       
       if (result.success && result.data?.token) {
         login(result.data.token, result.data.user);
@@ -69,7 +78,9 @@ const ForgotPasswordPage = () => {
         throw new Error('No token received from server.');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to reset password. Please try again.');
+      const msg = err.message || 'Failed to reset password. Please try again.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

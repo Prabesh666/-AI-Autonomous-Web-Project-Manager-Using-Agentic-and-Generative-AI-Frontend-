@@ -7,7 +7,7 @@ let toastId = 0;
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback(({ message, type = 'info', duration = 4000 }) => {
+  const addToast = useCallback(({ message, type = 'info', duration = 8000 }) => {
     const id = ++toastId;
     setToasts(prev => [...prev, { id, message, type, duration }]);
     // Auto-remove after duration
@@ -24,7 +24,7 @@ export const ToastProvider = ({ children }) => {
   // Convenience helpers
   const toast = {
     success: (message, opts) => addToast({ message, type: 'success', ...opts }),
-    error: (message, opts) => addToast({ message, type: 'error', duration: 6000, ...opts }),
+    error: (message, opts) => addToast({ message, type: 'error', duration: 10000, ...opts }),
     info: (message, opts) => addToast({ message, type: 'info', ...opts }),
     warning: (message, opts) => addToast({ message, type: 'warning', ...opts }),
   };

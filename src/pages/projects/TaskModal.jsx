@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../../context/ToastContext';
 import './TaskModal.css';
 
 const TaskModal = ({ isOpen, onClose, onSave, task, projectId }) => {
@@ -7,6 +8,7 @@ const TaskModal = ({ isOpen, onClose, onSave, task, projectId }) => {
   const [status, setStatus] = useState(task?.status || 'pending');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (task) {
@@ -40,9 +42,12 @@ const TaskModal = ({ isOpen, onClose, onSave, task, projectId }) => {
         status, 
         project: projectId 
       });
+      toast.success(task ? 'Task updated successfully' : 'Task created successfully');
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to save task');
+      const msg = err.message || 'Failed to save task';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

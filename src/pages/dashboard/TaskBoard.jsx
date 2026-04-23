@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useProjects } from '../../hooks/useProjects';
 import { useTasks } from '../../hooks/useTasks';
+import { useToast } from '../../context/ToastContext';
 import TaskModal from '../projects/TaskModal';
 import './TaskBoard.css';
 
@@ -10,6 +11,7 @@ const TaskBoard = () => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     loadProjects();
@@ -31,11 +33,14 @@ const TaskBoard = () => {
     try {
       if (editingTask) {
         await editTaskContent(editingTask._id || editingTask.id, taskData);
+        toast.success('Task updated successfully');
       } else {
         await addTask(taskData);
+        toast.success('Task created successfully');
       }
     } catch (err) {
       console.error('Failed to save task:', err);
+      toast.error(err.message || 'Failed to save task');
     }
   };
 

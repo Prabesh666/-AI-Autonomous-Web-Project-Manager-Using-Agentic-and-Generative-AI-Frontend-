@@ -1,0 +1,1 @@
+import{n as t}from"./api-DEXHMIGU.js";var a=async r=>t.post("/auth/register",r),e=async r=>t.post("/auth/login",r),n=async r=>t.post("/auth/request-otp",{email:r}),o=async r=>t.post("/auth/verify-otp",r),p=async r=>t.post("/auth/reset-password-otp",r);export{o as a,p as i,a as n,n as r,e as t};

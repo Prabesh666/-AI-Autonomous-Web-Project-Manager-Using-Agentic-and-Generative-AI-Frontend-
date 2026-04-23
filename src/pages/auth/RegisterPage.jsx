@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../api/auth';
 import { useTheme } from '../../context/ThemeContext';
 import { AppContext } from '../../context/AppContext';
+import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../api/index';
 
 const RegisterPage = () => {
@@ -16,6 +17,7 @@ const RegisterPage = () => {
 
   const navigate = useNavigate();
   const { login } = useContext(AppContext);
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,15 +30,16 @@ const RegisterPage = () => {
       
       if (result.success || result.user || result.data?.user) {
         setSuccessMsg(result.message || 'User registered successfully!');
+        toast.success(result.message || 'User registered successfully!');
         
         const userData = result.data?.user || result.user;
         const tokenData = result.data?.token || result.token;
 
         if (tokenData) {
-          login(tokenData, userData);
           setTimeout(() => {
+            login(tokenData, userData);
             navigate('/dashboard');
-          }, 1000);
+          }, 800);
         } else {
           // Auto redirect to login after 1.5 seconds if successful and no token returned
           setTimeout(() => {
@@ -44,11 +47,15 @@ const RegisterPage = () => {
           }, 1500);
         }
       } else {
-         setErrorMsg(result.message || 'Registration failed.');
+         const msg = result.message || 'Registration failed.';
+         setErrorMsg(msg);
+         toast.error(msg);
       }
 
     } catch (err) {
-      setErrorMsg(err.message || 'Registration failed. Please try again.');
+      const msg = err.message || 'Registration failed. Please try again.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

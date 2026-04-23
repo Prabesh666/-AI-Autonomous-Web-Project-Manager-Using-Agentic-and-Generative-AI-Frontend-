@@ -75,7 +75,9 @@ const SettingsPage = () => {
       setPwForm({ current: '', newPw: '', confirm: '' });
       toast.success('Password updated successfully!');
     } catch (err) {
-      setPwError(err.message || 'Failed to update password.');
+      const msg = err.message || 'Failed to update password.';
+      setPwError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

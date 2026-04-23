@@ -30,10 +30,11 @@ const ReportsPage = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [success, setSuccess] = useState('');
   const [formError, setFormError] = useState('');
 
-  const { loadingMap, executeAgent, pollJobStatus } = useAgents();
+  const { executeAgent, pollJobStatus } = useAgents();
   const toast = useToast();
 
   /* ── Load projects ─────────────────────────────── */
@@ -101,10 +102,11 @@ const ReportsPage = () => {
       return;
     }
 
+    setIsGeneratingAi(true);
     try {
       toast.info('Initializing AI Report Agent...');
       
-      const queuedData = await executeAgent('report', selectedProject);
+      const queuedData = await executeAgent('report', selectedProject, { prompt: "Generate a detailed project report summarizing the latest tasks and overall progress." });
       const jobId = queuedData?.data?.jobId || queuedData?.jobId;
       
       if (!jobId) throw new Error("Job orchestration failed to return a tracking ID.");
@@ -114,19 +116,30 @@ const ReportsPage = () => {
       // We pass the type 'report' but note the hook's executeAgent/pollJobStatus might use the agent router's output structure
       const completedJob = await pollJobStatus('report', jobId, 2500, 24);
       
-      // The worker returns { report: { reportData: { title, content } } } inside completedJob.result
-      const reportData = completedJob?.result?.report?.reportData || {};
+      const res = completedJob?.result || {};
       
-      if (reportData?.title) setTitle(reportData.title);
-      if (reportData?.content) setContent(reportData.content);
+      // Permissive extraction to handle different backend structures
+      let extractedTitle = res?.report?.reportData?.title || res?.reportData?.title || res?.report?.title || res?.title || '';
+      let extractedContent = res?.report?.reportData?.content || res?.reportData?.content || res?.report?.content || res?.content || '';
+
+      if (!extractedTitle && !extractedContent && typeof res?.report === 'string') {
+        extractedTitle = 'AI Generated Report';
+        extractedContent = res.report;
+      }
       
-      if (reportData?.title && reportData?.content) {
+      if (extractedTitle) setTitle(extractedTitle);
+      if (extractedContent) setContent(extractedContent);
+      
+      if (extractedTitle || extractedContent) {
         toast.success('AI Report generated successfully!');
       } else {
         throw new Error('AI returned an empty report structure.');
       }
     } catch (err) {
-      toast.error(err.message || 'Failed to generate AI report.');
+      console.error("AI Report Generation Error:", err?.response?.data || err);
+      toast.error(err?.response?.data?.message || err.message || 'Failed to generate AI report.');
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
@@ -229,10 +242,10 @@ const ReportsPage = () => {
                 <button
                   type="button"
                   onClick={handleAiGenerate}
-                  disabled={loadingMap['report'] || !selectedProject}
+                  disabled={isGeneratingAi || !selectedProject}
                   className="rp-ai-btn"
                 >
-                  {loadingMap['report'] ? (
+                  {isGeneratingAi ? (
                     <><span className="rp-spinner" /> Generating...</>
                   ) : (
                     <><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> AI Generate</>

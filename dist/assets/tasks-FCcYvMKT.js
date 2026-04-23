@@ -1,0 +1,1 @@
+import{n as s}from"./api-DEXHMIGU.js";var r=async a=>s.get(`/tasks/project/${a}`),n=async a=>s.post("/tasks",a),c=async(a,t)=>s.put(`/tasks/${a}`,t),k=async a=>s.delete(`/tasks/${a}`);export{c as i,k as n,r,n as t};

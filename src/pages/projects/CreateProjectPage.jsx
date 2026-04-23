@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { createProject } from '../../api/projects';
 import { runAgent, getAgentJobStatus } from '../../api/agents';
 import './CreateProjectPage.css';
@@ -33,6 +34,7 @@ const CreateProjectPage = () => {
   const navigate = useNavigate();
   const { user } = useContext(AppContext);
   const { theme } = useTheme();
+  const toast = useToast();
   const isDark = theme === 'dark';
 
   const [prompt, setPrompt] = useState('');
@@ -96,6 +98,7 @@ const CreateProjectPage = () => {
 
       /* Step 3: done */
       setStep(3);
+      toast.success('Project plan generated successfully!');
       setTimeout(() => navigate(`/projects/${projectId}`), 800);
 
     } catch (err) {
@@ -105,6 +108,7 @@ const CreateProjectPage = () => {
         ? serverData.errors.map(e => e.message).join(', ')
         : serverData?.message || err.message || 'Failed to generate project. Please try again.';
       setError(detailedError);
+      toast.error(detailedError);
       setIsGenerating(false);
       setStep(0);
     }

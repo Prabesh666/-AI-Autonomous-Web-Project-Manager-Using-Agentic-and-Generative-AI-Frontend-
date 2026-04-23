@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '../../context/ToastContext';
 
 const ProjectModal = ({ isOpen, onClose, onSave, project }) => {
   const [name, setName] = useState(project?.name || '');
@@ -6,6 +7,7 @@ const ProjectModal = ({ isOpen, onClose, onSave, project }) => {
   const [status, setStatus] = useState(project?.status || 'Active');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   // If not open, return null
   if (!isOpen) return null;
@@ -22,9 +24,12 @@ const ProjectModal = ({ isOpen, onClose, onSave, project }) => {
     try {
       setSubmitting(true);
       await onSave({ name, description, status });
+      toast.success(project ? 'Project updated successfully' : 'Project created successfully');
       onClose(); // close on success
     } catch (err) {
-      setError(err.message || 'Failed to save project');
+      const msg = err.message || 'Failed to save project';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

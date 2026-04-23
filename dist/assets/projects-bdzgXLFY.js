@@ -1,1 +1,0 @@
-import{n as t}from"./api-DuHZHPgk.js";var s=async()=>(await t.get("/projects")).data,c=async a=>(await t.post("/projects",a)).data,o=async(a,e)=>(await t.put(`/projects/${a}`,e)).data,n=async a=>(await t.delete(`/projects/${a}`)).data;export{o as i,n,s as r,c as t};

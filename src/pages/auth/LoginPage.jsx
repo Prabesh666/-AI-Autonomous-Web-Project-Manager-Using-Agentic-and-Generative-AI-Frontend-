@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../api/auth';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../api/index';
 
 const LoginPage = () => {
@@ -17,6 +18,7 @@ const LoginPage = () => {
   
   const navigate = useNavigate();
   const { login } = useContext(AppContext);
+  const toast = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,15 +29,20 @@ const LoginPage = () => {
     try {
       const result = await loginUser({ email, password });
       setSuccessMsg(result.message || 'Login successful!');
+      toast.success(result.message || 'Login successful!');
       
       if (result.success && result.data?.token) {
-        login(result.data.token, result.data.user);
-        navigate('/dashboard');
+        setTimeout(() => {
+          login(result.data.token, result.data.user);
+          navigate('/dashboard');
+        }, 800);
       } else {
         throw new Error('No token received from server.');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Connecting to server failed. Please try again.');
+      const msg = err.message || 'Connecting to server failed. Please try again.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
