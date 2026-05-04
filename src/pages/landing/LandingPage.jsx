@@ -248,7 +248,7 @@ const LandingPage = () => {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>© 2024 AI Project Manager Inc. All rights reserved.</p>
+          <p>© 2026 AI Project Manager Inc. All rights reserved.</p>
         </div>
       </footer>
     </div>

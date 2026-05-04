@@ -13,7 +13,7 @@ import { runAgent, getAgentJobStatus } from '../../api/agents';
    • Aware of: user, projects, tasks, navigation
 ───────────────────────────────────────────────── */
 
-const GREETINGS = [
+const DEFAULT_GREETINGS = [
   { icon: '👋', text: "Hi! I'm Shristika. Need help?" },
   { icon: '⚡', text: 'I can run AI agents for you!' },
   { icon: '📊', text: 'Ask me about your projects!' },
@@ -46,6 +46,19 @@ const ShristikaAvatar = ({ size = 32 }) => (
 /* ── Chat bubble ──────────────────────────────── */
 const Bubble = ({ msg, isDark }) => {
   const isBot = msg.sender === 'bot';
+
+  // Helper to render bold text and line breaks
+  const formatText = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} style={{ color: isBot ? (isDark ? '#f0abfc' : '#a855f7') : 'inherit', fontWeight: 800 }}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   return (
     <div style={{
       display: 'flex', gap: 8, alignItems: 'flex-end',
@@ -70,7 +83,22 @@ const Bubble = ({ msg, isDark }) => {
           boxShadow: isBot ? 'none' : '0 4px 14px rgba(168,85,247,0.35)',
           border: isBot ? `1px solid ${isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.12)'}` : 'none',
         }}>
-          {msg.typing ? <TypingDots /> : msg.text}
+          {msg.typing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <TypingDots />
+              {msg.statusText && (
+                <p style={{ 
+                  fontSize: '0.68rem', 
+                  color: isDark ? '#c084fc' : '#9333ea', 
+                  fontStyle: 'italic', 
+                  margin: 0,
+                  animation: 'shrFadeIn 0.3s ease'
+                }}>
+                  {msg.statusText}
+                </p>
+              )}
+            </div>
+          ) : formatText(msg.text)}
 
           {msg.chips && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
@@ -117,13 +145,57 @@ const ChatbotWidget = () => {
   const [toastIdx, setToastIdx]     = useState(0);
   const [toastVisible, setToastVisible] = useState(true);
   const [dismissed, setDismissed]   = useState(false);
+  const [greetings, setGreetings] = useState(DEFAULT_GREETINGS);
+
+  // 🎈 Messenger-style Draggable State
+  const [pos, setPos] = useState({ x: window.innerWidth - 85, y: window.innerHeight - 140 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const bottomRef   = useRef(null);
   const inputRef    = useRef(null);
   const initialized = useRef(false);
 
+  /* ── Dragging Handlers ────────────────────────── */
+  const onMouseDown = (e) => {
+    if (open) return; // Don't drag while open
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y
+    });
+    setDismissed(true); // Hide toasts when moving
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
+      setPos({
+        x: e.clientX - dragOffset.x,
+        y: e.clientY - dragOffset.y
+      });
+    };
+
+    const onMouseUp = () => {
+      if (!isDragging) return;
+      setIsDragging(false);
+      // Snap to edges like Messenger
+      const snapX = pos.x > window.innerWidth / 2 ? window.innerWidth - 85 : 15;
+      setPos(prev => ({ ...prev, x: snapX }));
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, dragOffset, pos]);
+
   /* Load projects */
-  useEffect(() => { if (projects.length === 0) loadProjects(); }, []);
+  useEffect(() => { if (projects?.length === 0) loadProjects(); }, []);
 
   /* Rotate greeting toasts every 3s */
   useEffect(() => {
@@ -131,12 +203,12 @@ const ChatbotWidget = () => {
     const id = setInterval(() => {
       setToastVisible(false);
       setTimeout(() => {
-        setToastIdx(p => (p + 1) % GREETINGS.length);
+        setToastIdx(p => (p + 1) % (greetings?.length || 1));
         setToastVisible(true);
       }, 350);
     }, 3200);
     return () => clearInterval(id);
-  }, [open, dismissed]);
+  }, [open, dismissed, greetings?.length]);
 
   /* Auto-scroll */
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isTyping]);
@@ -144,15 +216,24 @@ const ChatbotWidget = () => {
   /* Focus input */
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 350); }, [open]);
 
-  /* First-open greeting */
+  /* Page-aware greeting & Mood Pulse */
   useEffect(() => {
     if (open && !initialized.current) {
       initialized.current = true;
-      const firstName = user?.name?.split(' ')[0] || 'there';
+      const displayName = user?.name || user?.email?.split('@')[0] || 'there';
+      const firstName = displayName.split(' ')[0] || 'there';
+      const path = window.location.pathname;
+      
+      let contextMsg = `I'm here to help you manage your ${projects?.length || 0} project(s).`;
+      if (path.includes('reports')) contextMsg = "I see you're checking the reports—I've already analyzed the latest metrics for you! 📊";
+      if (path.includes('activity-log')) contextMsg = "Reviewing the audit trail? I can help you verify system integrity. 🛡️";
+      if (path.includes('ai-decision')) contextMsg = "At the Strategic Center! Ready to run an analysis? 🧠";
+
       const hour = new Date().getHours();
       const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      
       addBot(
-        `${greet}, **${firstName}**! 💖 I'm Shristika, your AI receptionist.\n\nI'm here to help you manage your ${projects.length} project(s), run AI agents, check progress, and navigate the app.\n\nWhat can I do for you today?`,
+        `${greet}, **${firstName}**! 💖 ${contextMsg}\n\nWhat can I do for you today?`,
         [
           { label: '📁 My Projects',  action: () => sendQuick('Show my projects') },
           { label: '⚡ Run AI',       action: () => sendQuick('Run AI agent') },
@@ -160,7 +241,35 @@ const ChatbotWidget = () => {
         ]
       );
     }
-  }, [open]);
+  }, [open, projects?.length, user]);
+
+  /* 🧠 Proactive "Pulse" Toasts */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!open && !isTyping && projects?.length > 0 && user) {
+        const displayName = user.name || user.email?.split('@')[0] || 'User';
+        const firstName = displayName.split(' ')[0];
+        const insights = [
+          { icon: '🚀', text: `Project "${projects[0]?.name || 'Alpha'}" is live and active!` },
+          { icon: '🛡️', text: `System audit: 100% integrity verified, ${firstName}.` },
+          { icon: '📈', text: `Strategic productivity is up 12% this week!` },
+          { icon: '✅', text: "All AI autonomous nodes are green." }
+        ];
+        const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+        
+        setGreetings(prev => {
+          const next = [...prev];
+          next[2] = randomInsight; // Replace the 3rd greeting with a live insight
+          return next;
+        });
+
+        // Trigger a fresh visibility cycle
+        setToastVisible(false);
+        setTimeout(() => setToastVisible(true), 500);
+      }
+    }, 30000); // Pulse every 30s
+    return () => clearInterval(interval);
+  }, [open, isTyping, projects, user]);
 
   /* ── helpers ──────────────────────────────────── */
   const addBot = (text, chips) =>
@@ -200,27 +309,39 @@ const ChatbotWidget = () => {
   /* ── Intent engine ────────────────────────────── */
   const processMessage = useCallback(async (text) => {
     const lower = text.toLowerCase().trim();
-    const first = user?.name?.split(' ')[0] || 'there';
+    const displayName = user?.name || user?.email?.split('@')[0] || 'there';
+    const first = displayName.split(' ')[0] || 'there';
+
+    if (!user && (lower.includes('who are you') || lower.includes('help') || lower.includes('what is this'))) {
+      return { 
+        text: "I'm Shristika! Think of me as your project's digital soul. 💁‍♀️\n\nI help humans like you build incredible things by automating the boring stuff. Want to see how we can work together?",
+        chips: [
+          { label: '🚀 Join the Team', action: () => navigate('/register') },
+          { label: '🔑 Sign In', action: () => navigate('/login') }
+        ]
+      };
+    }
 
     if (/^(hi|hello|hey|sup|yo|hola)\b/.test(lower))
-      return { text: `Hey ${first}! 😊 I'm Shristika, always here for you!\n\nHow can I help?`, chips: [
-        { label: '📁 Projects', action: () => sendQuick('Show my projects') },
+      return { text: `Good to see you, ${first}! 😊 I was just auditing our nodes—everything looks great. \n\nWhat's our focus for today?`, chips: [
+        { label: '📁 Review Projects', action: () => sendQuick('Show my projects') },
         { label: '📊 Dashboard', action: () => navigate('/dashboard') },
       ]};
 
     if (lower.includes('who am i') || lower.includes('my profile') || lower.includes('my account'))
-      return { text: `Here's your profile, ${first}:\n\n👤 ${user?.name || '—'}\n📧 ${user?.email || '—'}\n🔑 Role: ${(user?.role || 'user').toUpperCase()}\n📁 Projects: ${projects.length}`, chips: [
-        { label: '👤 Go to Profile', action: () => navigate('/profile') }
+      return { text: `You're the visionary behind it all, ${first}! Here's your current status:\n\n👤 ${user?.name || '—'}\n📧 ${user?.email || '—'}\n🔑 Role: ${(user?.role || 'user').toUpperCase()}\n📁 Active Projects: ${projects?.length || 0}`, chips: [
+        { label: '👤 View Profile', action: () => navigate('/profile') }
       ]};
 
     if (lower.includes('project') && (lower.includes('list') || lower.includes('show') || lower.includes('my') || lower.includes('all'))) {
-      if (!projects.length) return { text: "You don't have any projects yet!", chips: [
-        { label: '+ New Project', action: () => navigate('/projects/new') }
+      if (!projects?.length) return { text: "Our workspace is currently empty! Shall we start something new together?", chips: [
+        { label: '+ Launch New Project', action: () => navigate('/projects/new') }
       ]};
-      const list = projects.slice(0, 6).map((p, i) => `${i + 1}. ${p.name}`).join('\n');
-      return { text: `You have **${projects.length}** project(s):\n\n${list}`, chips: [
-        ...projects.slice(0, 3).map(p => ({ label: p.name.slice(0, 16), action: () => navigate(`/projects/${p._id || p.id}`) })),
-        { label: '+ New', action: () => navigate('/projects/new') }
+      const list = projects.map(p => `• **${p.name}**`).join('\n');
+      return { text: `We've got **${projects?.length || 0}** exciting project(s) in motion:\n\n${list}`, chips: [
+        { label: '⚡ Orchestrate AI', action: () => sendQuick('Run AI agent') },
+        { label: '⚙️ Workspace Settings', action: () => navigate('/settings') },
+        { label: '+ New Vision', action: () => navigate('/projects/new') }
       ]};
     }
 
@@ -228,6 +349,13 @@ const ChatbotWidget = () => {
       return { text: "Let's create a new project! 🚀", chips: [{ label: '+ New Project', action: () => navigate('/projects/new') }]};
 
     if (lower.includes('dashboard'))  { navigate('/dashboard'); return { text: '📊 Opening your Dashboard!' }; }
+
+    if (lower.includes('demo mode') || lower.includes('what should i show') || lower.includes('guide me')) {
+      return { 
+        text: "🚀 **Platinum Demo Sequence Activated!**\n\n1. **Dashboard**: Show your project overview.\n2. **AI Planning**: Run a 'Decomposition' agent.\n3. **AI Decision**: Run 'Strategy Analysis' to show the brain.\n4. **Reports**: Generate an AI Executive Report.\n5. **Activity Log**: Show the audit trail.\n\nGood luck! You've got this. 🏆",
+        chips: [{ label: 'Let\'s Start!', action: () => navigate('/dashboard') }]
+      };
+    }
     if (lower.includes('report'))     { navigate('/reports');   return { text: '📊 Opening Reports!' }; }
     if (lower.includes('setting'))    { navigate('/settings');  return { text: '⚙️ Opening Settings!' }; }
     if (lower.includes('profile'))    { navigate('/profile');   return { text: '👤 Opening your Profile!' }; }
@@ -236,7 +364,7 @@ const ChatbotWidget = () => {
     if (lower.includes('decision'))   { navigate('/ai-decision'); return { text: '🧠 Opening AI Decision center!' }; }
 
     if (lower.includes('run ai') || lower.includes('run agent') || lower.includes('generate task') || lower.includes('ai agent')) {
-      if (!projects.length) return { text: 'You need a project first!', chips: [{ label: '+ New Project', action: () => navigate('/projects/new') }]};
+      if (!projects?.length) return { text: 'You need a project first!', chips: [{ label: '+ New Project', action: () => navigate('/projects/new') }]};
       const project = projects[0];
       const projectId = project._id || project.id;
       setIsRunning(true);
@@ -279,7 +407,23 @@ const ChatbotWidget = () => {
     addUser(text);
     setIsTyping(true);
     const tid = showTyping();
-    await new Promise(r => setTimeout(r, 500 + Math.random() * 500));
+
+    // 🧠 Sequential Thinking Sequence
+    const lower = text.toLowerCase();
+    if (lower.includes('project') || lower.includes('status') || lower.includes('agent') || lower.includes('run') || lower.includes('ai')) {
+      const statuses = [
+        "🔍 Scanning our workspace for context...",
+        "🧠 Connecting with our AI modules...",
+        "✨ Finalizing the perfect insight for you..."
+      ];
+      for (const status of statuses) {
+        setMessages(prev => prev.map(m => m.id === tid ? { ...m, statusText: status } : m));
+        await new Promise(r => setTimeout(r, 900));
+      }
+    } else {
+      await new Promise(r => setTimeout(r, 600));
+    }
+
     const resp = await processMessage(text);
     removeTyping(tid);
     setIsTyping(false);
@@ -292,17 +436,21 @@ const ChatbotWidget = () => {
 
   return (
     <>
-      {/* ══ 3 Greeting Toasts — always visible ════ */}
+      {/* ══ 3 Greeting Toasts — follows the bubble ════ */}
       {!open && !dismissed && (
         <div style={{
-          position: 'fixed', bottom: '6.5rem', right: '1.75rem',
+          position: 'fixed', 
+          left: pos.x > window.innerWidth / 2 ? 'auto' : pos.x + 75,
+          right: pos.x > window.innerWidth / 2 ? (window.innerWidth - pos.x) + 15 : 'auto',
+          top: pos.y - 120,
           zIndex: 998, display: 'flex', flexDirection: 'column', gap: 8,
-          alignItems: 'flex-end',
+          alignItems: pos.x > window.innerWidth / 2 ? 'flex-end' : 'flex-start',
+          pointerEvents: 'none',
+          transition: isDragging ? 'none' : 'all 0.4s ease'
         }}>
-          {GREETINGS.map((g, i) => {
+          {greetings.map((g, i) => {
             const isTop = i === toastIdx;
             const isMid = i === (toastIdx + 1) % 3;
-            // isBot = third (most behind)
             const scale    = isTop ? 1 : isMid ? 0.96 : 0.92;
             const opacity  = isTop ? 1 : isMid ? 0.82 : 0.6;
             const yOffset  = isTop ? 0 : isMid ? 4 : 8;
@@ -310,9 +458,7 @@ const ChatbotWidget = () => {
             return (
               <div
                 key={i}
-                onClick={() => { setOpen(true); setDismissed(true); }}
                 style={{
-                  /* Solid high-contrast background — no transparency issues */
                   background: isDark ? '#1e293b' : '#ffffff',
                   border: `1.5px solid ${isTop
                     ? (isDark ? '#a855f7' : '#c084fc')
@@ -325,15 +471,14 @@ const ChatbotWidget = () => {
                         ? '0 8px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(168,85,247,0.2)'
                         : '0 8px 24px rgba(168,85,247,0.2)')
                     : (isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.06)'),
-                  cursor: 'pointer', userSelect: 'none',
                   opacity: toastVisible ? opacity : (isTop ? 0 : opacity * 0.5),
                   transform: `translateY(${yOffset}px) scale(${scale})`,
                   transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
-                  transformOrigin: 'right center',
-                  minWidth: 220,
+                  transformOrigin: pos.x > window.innerWidth / 2 ? 'right center' : 'left center',
+                  minWidth: 200,
+                  maxWidth: 260,
                 }}
               >
-                {/* Icon bubble */}
                 <div style={{
                   width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
                   background: isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.1)',
@@ -342,8 +487,6 @@ const ChatbotWidget = () => {
                 }}>
                   {g.icon}
                 </div>
-
-                {/* Text */}
                 <span style={{
                   fontSize: '0.78rem', fontWeight: 600, flex: 1,
                   color: isDark ? '#e2e8f0' : '#1e293b',
@@ -373,7 +516,21 @@ const ChatbotWidget = () => {
 
 
       {/* ══ Floating Button ════════════════════════ */}
-      <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.75rem', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <div 
+        onMouseDown={onMouseDown}
+        style={{ 
+          position: 'fixed', 
+          left: pos.x, 
+          top: pos.y, 
+          zIndex: 1000, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: 4,
+          cursor: isDragging ? 'grabbing' : 'grab',
+          transition: isDragging ? 'none' : 'left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s ease'
+        }}
+      >
         {/* Name badge */}
         {!open && (
           <div style={{
@@ -384,7 +541,9 @@ const ChatbotWidget = () => {
             backdropFilter: 'blur(8px)',
             boxShadow: '0 2px 8px rgba(168,85,247,0.2)',
             letterSpacing: 0.3,
-            animation: 'shrFadeIn .4s ease'
+            animation: 'shrFadeIn .4s ease',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none'
           }}>
             Shristika ✨
           </div>
@@ -392,12 +551,13 @@ const ChatbotWidget = () => {
 
         {/* FAB */}
         <button
-          onClick={() => { setOpen(o => !o); setDismissed(true); }}
+          onClick={() => { if (!isDragging) { setOpen(o => !o); setDismissed(true); } }}
           title="Chat with Shristika"
           style={{
             width: 58, height: 58, borderRadius: '50%', border: '3px solid',
             borderColor: open ? (isDark ? '#334155' : '#e5e7eb') : 'rgba(244,114,182,0.5)',
-            cursor: 'pointer', position: 'relative', overflow: 'hidden',
+            cursor: isDragging ? 'grabbing' : 'pointer', 
+            position: 'relative', overflow: 'hidden',
             background: open
               ? (isDark ? '#1e293b' : '#f8fafc')
               : 'linear-gradient(135deg,#f472b6,#a855f7)',
@@ -405,6 +565,7 @@ const ChatbotWidget = () => {
             transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: open ? '1rem' : '1.6rem',
+            touchAction: 'none'
           }}
         >
           {open ? (
@@ -420,16 +581,21 @@ const ChatbotWidget = () => {
             position: 'absolute', bottom: 2, right: 2,
             width: 12, height: 12, borderRadius: '50%',
             background: '#10b981', border: '2px solid ' + (isDark ? '#0f172a' : '#fff'),
-            animation: 'shrPulse 2s infinite'
+            animation: 'shrPulse 2s infinite',
+            pointerEvents: 'none'
           }} />
         )}
       </div>
 
       {/* ══ Chat Panel ═════════════════════════════ */}
       <div style={{
-        position: 'fixed', bottom: '6.5rem', right: '1.75rem', zIndex: 999,
-        width: 360, height: 540,
-        background: panelBg, borderRadius: 22, overflow: 'hidden',
+        position: 'fixed', 
+        left: pos.x > window.innerWidth / 2 ? 'auto' : pos.x + 85,
+        right: pos.x > window.innerWidth / 2 ? (window.innerWidth - pos.x) + 20 : 'auto',
+        top: Math.max(20, Math.min(pos.y - 580, window.innerHeight - 660)),
+        zIndex: 999,
+        width: 420, height: 640,
+        background: panelBg, borderRadius: 22, overflow: 'auto',
         border: `1px solid ${isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.15)'}`,
         boxShadow: isDark
           ? '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(168,85,247,0.1)'
@@ -438,6 +604,11 @@ const ChatbotWidget = () => {
         transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.93)',
         opacity: open ? 1 : 0, pointerEvents: open ? 'all' : 'none',
         transition: 'all 0.35s cubic-bezier(0.34,1.2,0.64,1)',
+        resize: 'both',
+        minWidth: 320,
+        minHeight: 400,
+        maxWidth: 800,
+        maxHeight: 800
       }}>
         {/* ── Header ── */}
         <div style={{
@@ -467,7 +638,7 @@ const ChatbotWidget = () => {
             </p>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.7rem', margin: '1px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-              {isRunning ? 'Running AI agent...' : isTyping ? 'Typing...' : `AI Receptionist · ${projects.length} projects`}
+              {isRunning ? 'Running AI agent...' : isTyping ? 'Typing...' : `AI Receptionist · ${projects?.length || 0} projects`}
             </p>
           </div>
 

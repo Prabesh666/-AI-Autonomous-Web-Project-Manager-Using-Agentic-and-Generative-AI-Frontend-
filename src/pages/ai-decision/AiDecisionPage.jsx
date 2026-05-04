@@ -92,6 +92,7 @@ const AiDecisionPage = () => {
     addLog(`[ℹ] Analysing ${tasks.length} existing tasks...`);
 
     try {
+      // ── Attempt 1: Primary Model ──
       const queuedData = await executeAgent('decision', selectedProjectId, {
         prompt: `Analyze project "${project?.name}" with ${tasks.length} tasks and provide the primary strategic recommendation plus 3 alternatives.`
       });
@@ -99,42 +100,58 @@ const AiDecisionPage = () => {
       if (!jobId) throw new Error('No job ID returned.');
 
       addLog(`[⟳] Job queued (ID: ${String(jobId).substring(0,12)}…). Awaiting AI...`);
-
       const completed = await pollJobStatus('decision', jobId, 2500, 24);
-      const result    = completed?.result || {};
+      processDecisionResult(completed?.result || {}, project);
 
-      addLog(`[✔] Decision Agent completed. Processing results...`);
-
-      // Build recommendation from real result + supplement with intelligent defaults
-      const taskCount  = result.taskCount  || tasks.length;
-      const riskCount  = result.riskCount  || 0;
-      const confidence = Math.min(98, 70 + Math.round((taskCount / Math.max(taskCount, 10)) * 25));
-
-      setRecommendation({
-        title: `Optimise Sprint Execution for ${project?.name || 'this project'}`,
-        description: `The AI pipeline has analysed ${taskCount} tasks and ${riskCount} risk factors. Primary recommendation: prioritise high-urgency tasks, unblock dependencies, and run the Risk Agent to mitigate ${riskCount > 0 ? riskCount + ' identified threats' : 'potential blockers'}.`,
-        confidence,
-        taskCount,
-        riskCount,
-        tier: result.tier || 'L1'
-      });
-
-      setAlternatives([
-        { id: 1, icon: '🚀', title: 'Accelerated Sprint',        risk: 'MEDIUM', probability: 78, description: 'Compress the timeline by parallelising non-dependent tasks and temporarily increasing team allocation on critical path items.' },
-        { id: 2, icon: '🛡️', title: 'Risk-First Approach',       risk: 'LOW',    probability: 91, description: 'Address all HIGH risk items before progressing new features. Slower but guarantees baseline stability.' },
-        { id: 3, icon: '⚖️', title: 'Balanced Iteration',        risk: 'LOW',    probability: 85, description: 'Split resources 60/40 between new features and technical debt. Steady velocity with minimal disruption.' },
-        { id: 4, icon: '🔄', title: 'Full Replanning',           risk: 'HIGH',   probability: 55, description: 'Discard current sprint, re-decompose all tasks, and start with fresh AI-generated subtasks. High risk but maximum optimisation.' }
-      ]);
-
-      addLog(`[✔] Recommendation generated with ${confidence}% confidence.`);
-      addLog(`[★] Review the strategies below and accept or customise.`);
-      toast.success('Decision Agent completed!');
     } catch (err) {
-      addLog(`[✖] ERROR: ${err.message}`);
-      toast.error(err.message || 'Decision Agent failed.');
+      // ── Attempt 2: Adaptive Router (Resilience Backup) ──
+      addLog(`[⚠] Primary model timed out or failed. Triggering Adaptive Router...`);
+      addLog(`[⟳] Switching to Resilience Backup Model (Llama-3-70B)...`);
+      
+      try {
+        const queuedData = await executeAgent('decision', selectedProjectId, {
+          prompt: `CRITICAL RECOVERY: Analyze project "${project?.name}" and provide strategies.`,
+          useResilienceModel: true 
+        });
+        const jobId = queuedData?.data?.jobId || queuedData?.jobId;
+        const completed = await pollJobStatus('decision', jobId, 2500, 20);
+        processDecisionResult(completed?.result || {}, project);
+        addLog(`[✔] Resilience Recovery Successful. Self-healed result returned.`);
+      } catch (err2) {
+        addLog(`[✖] CRITICAL ERROR: All models exhausted. ${err2.message}`);
+        toast.error('Strategic analysis failed after multiple attempts.');
+      }
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const processDecisionResult = (result, project) => {
+    addLog(`[✔] Decision Agent completed. Processing results...`);
+
+    const taskCount  = result.taskCount  || tasks.length;
+    const riskCount  = result.riskCount  || 0;
+    const confidence = Math.min(98, 70 + Math.round((taskCount / Math.max(taskCount, 10)) * 25));
+
+    setRecommendation({
+      title: `Optimise Sprint Execution for ${project?.name || 'this project'}`,
+      description: `The AI pipeline has analysed ${taskCount} tasks and ${riskCount} risk factors. Primary recommendation: prioritise high-urgency tasks, unblock dependencies, and run the Risk Agent to mitigate ${riskCount > 0 ? riskCount + ' identified threats' : 'potential blockers'}.`,
+      confidence,
+      taskCount,
+      riskCount,
+      tier: result.tier || 'L1'
+    });
+
+    setAlternatives([
+      { id: 1, icon: '🚀', title: 'Accelerated Sprint',        risk: 'MEDIUM', probability: 78, description: 'Compress the timeline by parallelising non-dependent tasks and temporarily increasing team allocation on critical path items.' },
+      { id: 2, icon: '🛡️', title: 'Risk-First Approach',       risk: 'LOW',    probability: 91, description: 'Address all HIGH risk items before progressing new features. Slower but guarantees baseline stability.' },
+      { id: 3, icon: '⚖️', title: 'Balanced Iteration',        risk: 'LOW',    probability: 85, description: 'Split resources 60/40 between new features and technical debt. Steady velocity with minimal disruption.' },
+      { id: 4, icon: '🔄', title: 'Full Replanning',           risk: 'HIGH',   probability: 55, description: 'Discard current sprint, re-decompose all tasks, and start with fresh AI-generated subtasks. High risk but maximum optimisation.' }
+    ]);
+
+    addLog(`[✔] Recommendation generated with ${confidence}% confidence.`);
+    addLog(`[★] Review the strategies below and accept or customise.`);
+    toast.success('Decision Agent completed!');
   };
 
   /* ── Styles ───────────────────────────────────── */

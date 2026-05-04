@@ -290,6 +290,7 @@ const DashboardHome = () => {
       <div className="stats-row">
         <StatPill icon="📁" label="Projects"      value={projects?.length || 0}  color="blue"   />
         <StatPill icon="📋" label="Total Tasks"   value={totalTasks}             color="purple" />
+        <StatPill icon="⚡" label="AI Resource"   value={`${user?.aiUsage || 0}/${user?.aiQuota || '10k'}`} color="indigo" />
         <StatPill icon="🔄" label="In Progress"   value={inProgCount}            color="orange" />
         <StatPill icon="✅" label="Completed"      value={doneTasks}              color="green"  />
       </div>

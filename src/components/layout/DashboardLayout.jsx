@@ -55,9 +55,6 @@ const DashboardLayout = () => {
           </div>
         </main>
       </div>
-
-      {/* ── Chatbot — floats over all pages ─── */}
-      <ChatbotWidget />
     </div>
   );
 };

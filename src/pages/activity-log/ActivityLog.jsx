@@ -271,8 +271,7 @@ const ActivityLog = () => {
                       </span>
                     </div>
                     <p style={{ fontSize: '0.78rem', color: textSecondary, margin: '0.2rem 0 0', lineHeight: 1.4 }}>
-                      {log.metadata?.method} {log.metadata?.url}
-                      {log.traceId && <span style={{ opacity: 0.5, marginLeft: '0.5rem' }}>· {log.traceId.substring(0, 8)}…</span>}
+                      {log.traceId && <span style={{ opacity: 0.5 }}>Trace: {log.traceId.substring(0, 8)}…</span>}
                     </p>
                   </div>
                 </div>

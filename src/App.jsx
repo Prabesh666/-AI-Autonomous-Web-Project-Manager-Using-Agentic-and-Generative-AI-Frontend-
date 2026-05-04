@@ -2,6 +2,7 @@ import AppRouter from './routes/AppRouter';
 import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import ChatbotWidget from './components/layout/ChatbotWidget';
 
 function App() {
   return (

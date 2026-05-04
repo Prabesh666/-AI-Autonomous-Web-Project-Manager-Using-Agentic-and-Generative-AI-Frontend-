@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { fetchProjects } from '../../api/projects';
+import { useProjects } from '../../hooks/useProjects';
 import { createReport, fetchReports } from '../../api/reports';
 import { useAgents } from '../../hooks/useAgents';
 import { useToast } from '../../context/ToastContext';
@@ -20,7 +20,7 @@ const ReportsPage = () => {
   const isDark = theme === 'dark';
 
   /* ── State ─────────────────────────────────────── */
-  const [projects, setProjects] = useState([]);
+  const { projects, loading: projectsLoading, loadProjects } = useProjects();
   const [selectedProject, setSelectedProject] = useState('');
   const [reports, setReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
@@ -38,18 +38,15 @@ const ReportsPage = () => {
   const toast = useToast();
 
   /* ── Load projects ─────────────────────────────── */
+  useEffect(() => { 
+    loadProjects(); 
+  }, [loadProjects]);
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await fetchProjects();
-        const list = Array.isArray(data) ? data
-          : Array.isArray(data?.projects) ? data.projects
-          : Array.isArray(data?.results) ? data.results : [];
-        setProjects(list);
-        if (list.length > 0) setSelectedProject(list[0]._id || list[0].id);
-      } catch { /* silent */ }
-    })();
-  }, []);
+    if (projects.length > 0 && !selectedProject) {
+      setSelectedProject(projects[0]._id || projects[0].id);
+    }
+  }, [projects, selectedProject]);
 
   /* ── Load reports when project changes ─────────── */
   const loadReports = useCallback(async (pid) => {
@@ -132,6 +129,8 @@ const ReportsPage = () => {
       
       if (extractedTitle || extractedContent) {
         toast.success('AI Report generated successfully!');
+        // 🔄 Refresh the report list so the new report appears in history
+        loadReports(selectedProject);
       } else {
         throw new Error('AI returned an empty report structure.');
       }
@@ -146,32 +145,7 @@ const ReportsPage = () => {
   /* ── Render ────────────────────────────────────── */
   return (
     <div className="reports-page" style={{ animation: 'rpFadeIn 0.35s ease both' }}>
-
-      {/* Header Options */}
-      <div className="rp-header" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        marginBottom: '1rem',
-      }}>
-        {/* Project selector */}
-        {projects.length > 0 && (
-          <select
-            value={selectedProject}
-            onChange={e => setSelectedProject(e.target.value)}
-            style={{
-              padding: '0.5rem 1rem', borderRadius: '10px',
-              border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
-              background: isDark ? '#1f2937' : '#f9fafb',
-              color: isDark ? '#f9fafb' : '#111827',
-              fontSize: '0.82rem', fontWeight: 500,
-              outline: 'none', cursor: 'pointer',
-            }}
-          >
-            {projects.map(p => (
-              <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      {/* Selector moved to the form column below */}
 
       {/* Two-column layout */}
       <div className="rp-columns">
@@ -189,6 +163,36 @@ const ReportsPage = () => {
             <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginBottom: '1.25rem' }}>
               Log documentation, meeting notes, or milestone summaries.
             </p>
+
+            {/* 📍 NEW PROJECT SELECTOR LOCATION */}
+            <div className="rp-project-select-container" style={{ marginBottom: '1.5rem' }}>
+              <label className="rp-label" style={{ color: isDark ? '#d1d5db' : '#374151', marginBottom: '0.5rem', display: 'block' }}>
+                Select Target Project <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              {projects.length > 0 ? (
+                <select
+                  value={selectedProject}
+                  onChange={e => setSelectedProject(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.75rem 1rem', borderRadius: '12px',
+                    border: `2px solid ${isDark ? '#374151' : '#e5e7eb'}`,
+                    background: isDark ? '#111827' : '#f9fafb',
+                    color: isDark ? '#f9fafb' : '#111827',
+                    fontSize: '0.9rem', fontWeight: 600,
+                    outline: 'none', cursor: 'pointer',
+                    transition: 'border-color 0.2s',
+                  }}
+                >
+                  {projects.map(p => (
+                    <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ padding: '0.75rem', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '0.85rem' }}>
+                  ⚠️ No projects found. Please create one in the Dashboard.
+                </div>
+              )}
+            </div>
 
             {/* Success message */}
             {success && (

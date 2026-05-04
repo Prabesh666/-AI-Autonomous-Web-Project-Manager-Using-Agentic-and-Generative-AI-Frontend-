@@ -22,6 +22,7 @@ const CreateProjectPage = lazy(() => import('../pages/projects/CreateProjectPage
 const AiMemoryPage = lazy(() => import('../pages/ai-memory/AiMemoryPage'));
 const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'));
 import PrivateRoute from '../components/PrivateRoute';
+import ChatbotWidget from '../components/layout/ChatbotWidget';
 
 const AppRouter = () => {
   return (
@@ -32,7 +33,6 @@ const AppRouter = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          {/* OAuth callbacks - backend redirects to /auth/success or /auth/failure */}
           <Route path="/auth/success" element={<OAuthCallbackPage />} />
           <Route path="/auth/failure" element={<OAuthCallbackPage />} />
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
@@ -44,24 +44,19 @@ const AppRouter = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/projects/new" element={<CreateProjectPage />} />
-            {/* AI pages — ai-review requires a projectId to run the agent */}
             <Route path="/ai-review/:projectId" element={<AiReviewPage />} />
             <Route path="/ai-review" element={<Navigate to="/projects" replace />} />
             <Route path="/ai-decision" element={<AiDecisionPage />} />
             <Route path="/ai-memory" element={<AiMemoryPage />} />
             <Route path="/reports" element={<ReportsPage />} />
-            {/* Project routes */}
             <Route path="/projects" element={<ProjectListPage />} />
             <Route path="/projects/:id" element={<ProjectDetailsPage />} />
-            {/* Redirects for removed / legacy paths */}
-            <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/ai-loading" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/ai-error" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <ChatbotWidget />
     </BrowserRouter>
   );
 };

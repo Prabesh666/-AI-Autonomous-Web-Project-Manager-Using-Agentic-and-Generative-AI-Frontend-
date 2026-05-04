@@ -1,8 +1,8 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
-import { updateMyProfile } from '../../api/profile';
+import { getMyProfile, updateMyProfile } from '../../api/profile';
 import { useNavigate } from 'react-router-dom';
 import './SettingsPage.css';
 
@@ -44,7 +44,7 @@ const SettingRow = ({ icon, title, desc, action, border = true, isDark }) => (
 
 /* ── Main ──────────────────────────────────────────── */
 const SettingsPage = () => {
-  const { user, logout } = useContext(AppContext);
+  const { user, login, logout } = useContext(AppContext);
   const { theme, toggleTheme } = useTheme();
   const toast = useToast();
   const navigate = useNavigate();
@@ -52,6 +52,21 @@ const SettingsPage = () => {
 
   const [activeTab, setActiveTab] = useState('General');
   const [saving, setSaving] = useState(false);
+
+  // 🔄 Fetch latest profile data on mount to ensure name/email are not dashes
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMyProfile();
+        const freshUser = data?.data || data;
+        if (freshUser && freshUser.email) {
+          login(localStorage.getItem('token'), { ...user, ...freshUser });
+        }
+      } catch (err) {
+        console.error('Settings: Failed to refresh profile data', err);
+      }
+    })();
+  }, []);
 
   // Notification toggles (local preference — stored in localStorage)
   const [notifEmail,   setNotifEmail]   = useState(() => localStorage.getItem('notif_email')   !== 'false');

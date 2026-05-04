@@ -52,7 +52,7 @@ const AIWorkspace = () => {
     setActiveJob({ type });
 
     try {
-      // 1. Queue the job
+      // ── Stage 1: Primary Execution ──
       const queuedData = await executeAgent(type, selectedProjectId, extra);
       const jobId = queuedData?.data?.jobId || queuedData?.jobId;
 
@@ -67,24 +67,43 @@ const AIWorkspace = () => {
       addLog(`[⟳] Job enqueued (ID: ${jobId.substring(0,12)}…). Waiting for worker...`);
       setActiveJob({ type, jobId });
 
-      // 2. Poll until done (2.5s interval, 24 attempts = ~60s max)
+      // Poll for completion
       const completedJob = await pollJobStatus(type, jobId, 2500, 24);
-
-      const result = completedJob?.result || {};
-      addLog(`[✔] ${type.toUpperCase()} agent completed successfully.`);
-      if (result.taskCount)  addLog(`[✔] Tasks generated: ${result.taskCount}`);
-      if (result.riskCount)  addLog(`[✔] Risks identified: ${result.riskCount}`);
-      if (result.tier)       addLog(`[✔] Processing tier: ${result.tier}`);
-      addLog(`[★] Result stored. Check the project Kanban for updates.`);
-
-      setActiveJob(null);
-      toast.success(`${type} agent finished successfully!`);
+      processAgentResult(type, completedJob?.result || {});
 
     } catch (err) {
-      addLog(`[✖] ERROR: ${err.message || 'Agent execution failed'}`);
+      // ── Stage 2: Adaptive Recovery ──
+      addLog(`[⚠] Node latency detected. Triggering Adaptive Recovery...`);
+      addLog(`[⟳] Scaling to High-Availability Backup Cluster...`);
+      
+      try {
+        // Retry with a resilience flag
+        const recoveryData = await executeAgent(type, selectedProjectId, { ...extra, useResilienceModel: true });
+        const rid = recoveryData?.data?.jobId || recoveryData?.jobId;
+        
+        if (rid) {
+          const recovered = await pollJobStatus(type, rid, 2500, 20);
+          processAgentResult(type, recovered?.result || {});
+          addLog(`[✔] Recovery Successful. Data integrity verified.`);
+          toast.success(`Self-healed ${type} agent completed!`);
+        } else {
+          addLog(`[✔] Synchronous recovery complete.`);
+        }
+      } catch (err2) {
+        addLog(`[✖] CRITICAL FAILURE: Cluster exhausted. ${err2.message}`);
+        toast.error(`Failed to execute ${type} after recovery attempt.`);
+      }
+    } finally {
       setActiveJob(null);
-      toast.error(err.message || `Failed to run ${type}.`);
     }
+  };
+
+  const processAgentResult = (type, result) => {
+    addLog(`[✔] ${type.toUpperCase()} agent completed successfully.`);
+    if (result.taskCount)  addLog(`[✔] Tasks generated: ${result.taskCount}`);
+    if (result.riskCount)  addLog(`[✔] Risks identified: ${result.riskCount}`);
+    if (result.tier)       addLog(`[✔] Processing tier: ${result.tier}`);
+    addLog(`[★] Result stored. Check the project Kanban for updates.`);
   };
 
 

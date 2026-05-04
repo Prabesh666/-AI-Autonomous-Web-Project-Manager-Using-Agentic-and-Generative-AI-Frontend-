@@ -86,7 +86,7 @@ const LoginPage = () => {
       <div className="login-form-section">
         <div className="form-wrapper">
           <div className="form-header">
-            <h2>Welcome back, Prabesh!</h2>
+            <h2>Welcome back!</h2>
             <p className="form-subtitle">Please enter your details to access your dashboard.</p>
           </div>
 
@@ -144,6 +144,28 @@ const LoginPage = () => {
                   Logging in...
                 </>
               ) : 'Log in'}
+            </button>
+
+            {/* 🚀 QUICK ACCESS DEMO BUTTON */}
+            <button 
+              type="button" 
+              className="demo-access-btn"
+              style={{
+                marginTop: '1rem', width: '100%', padding: '0.75rem',
+                borderRadius: '10px', border: '1px dashed #3b82f6',
+                background: 'rgba(59,130,246,0.05)', color: '#3b82f6',
+                fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(59,130,246,0.05)'; }}
+              onClick={() => {
+                setEmail('prabesh@example.com');
+                setPassword('password123');
+                toast.info('Demo credentials applied! Just click Log In.');
+              }}
+            >
+              🚀 Quick Access (Demo Mode)
             </button>
             
             <div className="divider">

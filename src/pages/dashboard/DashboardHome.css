@@ -149,7 +149,7 @@
 /* ── Stats row ───────────────────────────────────────── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.875rem;
 }
 
@@ -172,6 +172,7 @@
   inset: 0;
   opacity: 0.05;
   border-radius: inherit;
+  pointer-events: none;
 }
 .stat-pill:hover {
   transform: translateY(-2px);
@@ -182,6 +183,7 @@
 .stat-pill--green::before  { background: #22c55e; }
 .stat-pill--orange::before { background: #f59e0b; }
 .stat-pill--purple::before { background: #8b5cf6; }
+.stat-pill--indigo::before { background: #6366f1; }
 
 .stat-icon { font-size: 1.5rem; flex-shrink: 0; }
 

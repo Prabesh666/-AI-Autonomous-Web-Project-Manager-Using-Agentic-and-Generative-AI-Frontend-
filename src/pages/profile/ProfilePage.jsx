@@ -127,9 +127,10 @@ const ProfilePage = () => {
       const data = await updateMyProfile(form);
       const updated = data?.data || data;
       setProfile(prev => ({ ...prev, ...updated }));
-      // Also update the AppContext user name
-      if (updated.name && ctxUser) {
-        login(localStorage.getItem('token'), { ...ctxUser, name: updated.name });
+      
+      // 🔄 Sync with Global Context to update Navbar/Sidebar instantly
+      if (ctxUser) {
+        login(localStorage.getItem('token'), { ...ctxUser, ...updated });
       }
       setEditing(false);
       toast.success('Profile updated successfully!');
