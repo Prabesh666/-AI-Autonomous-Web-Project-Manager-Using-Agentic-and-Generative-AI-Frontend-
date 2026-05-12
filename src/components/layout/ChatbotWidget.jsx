@@ -130,7 +130,7 @@ const Bubble = ({ msg, isDark }) => {
 };
 
 /* ════════════════════════════════════════════════ */
-const ChatbotWidget = () => {
+const ChatbotWidget = ({ inlineMode = false }) => {
   const { user } = useContext(AppContext);
   const { theme } = useTheme();
   const { projects, loadProjects } = useProjects();
@@ -146,6 +146,8 @@ const ChatbotWidget = () => {
   const [toastVisible, setToastVisible] = useState(true);
   const [dismissed, setDismissed]   = useState(false);
   const [greetings, setGreetings] = useState(DEFAULT_GREETINGS);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showAgents, setShowAgents] = useState(false);
 
   // 🎈 Messenger-style Draggable State
   const [pos, setPos] = useState({ x: window.innerWidth - 85, y: window.innerHeight - 140 });
@@ -196,6 +198,13 @@ const ChatbotWidget = () => {
 
   /* Load projects */
   useEffect(() => { if (projects?.length === 0) loadProjects(); }, []);
+
+  /* Listen for sidebar toggle event */
+  useEffect(() => {
+    const handleToggle = () => { setOpen(true); setDismissed(true); };
+    window.addEventListener('toggleChatbot', handleToggle);
+    return () => window.removeEventListener('toggleChatbot', handleToggle);
+  }, []);
 
   /* Rotate greeting toasts every 3s */
   useEffect(() => {
@@ -363,19 +372,37 @@ const ChatbotWidget = () => {
     if (lower.includes('memory') || lower.includes('audit'))     { navigate('/ai-memory');  return { text: '🧠 Opening AI Memory trail!' }; }
     if (lower.includes('decision'))   { navigate('/ai-decision'); return { text: '🧠 Opening AI Decision center!' }; }
 
-    if (lower.includes('run ai') || lower.includes('run agent') || lower.includes('generate task') || lower.includes('ai agent')) {
+    if (lower.includes('run ai') || lower.includes('run agent') || lower.includes('generate task') || lower.includes('ai agent') || (lower.includes('run') && lower.includes('agent'))) {
       if (!projects?.length) return { text: 'You need a project first!', chips: [{ label: '+ New Project', action: () => navigate('/projects/new') }]};
       const project = projects[0];
       const projectId = project._id || project.id;
+      
+      // Parse out the target agent if provided, default to planner
+      const agentMap = {
+        'planner': 'planner', 'critic': 'critic', 'task': 'task', 'risk': 'risk',
+        'ethics': 'ethics', 'reporter': 'report', 'architect': 'architect',
+        'sre': 'sre', 'commit': 'commit', 'visual': 'visual', 'reflexion': 'reflexion',
+        'replanning': 'replanning', 'scoring': 'scoring', 'dependency': 'dependency',
+        'rule': 'rule', 'decision': 'decision', 'health': 'health'
+      };
+      
+      let targetAgent = 'planner';
+      for (const key of Object.keys(agentMap)) {
+        if (lower.includes(key)) {
+          targetAgent = agentMap[key];
+          break;
+        }
+      }
+
       setIsRunning(true);
       try {
-        const res = await runAgent('planner', projectId, { prompt: `Analyze and improve: ${project.name}` });
+        const res = await runAgent(targetAgent, projectId, { prompt: `Analyze and improve: ${project.name}` });
         const jobId = res?.data?.jobId || res?.jobId;
-        if (!jobId) { setIsRunning(false); return { text: `✅ AI queued for **${project.name}**!` }; }
+        if (!jobId) { setIsRunning(false); return { text: `✅ ${targetAgent.toUpperCase()} Agent queued for **${project.name}**!` }; }
         const done = await pollJob(jobId);
         const r = done?.result || {};
         setIsRunning(false);
-        return { text: `✅ Done! AI analyzed **${project.name}**\n\n📋 ${r.taskCount || '?'} tasks\n🛡️ ${r.riskCount || '?'} risks`, chips: [
+        return { text: `✅ Done! **${targetAgent.toUpperCase()}** analyzed **${project.name}**\n\n📋 ${r.taskCount || 'N/A'} tasks\n🛡️ ${r.riskCount || 'N/A'} risks`, chips: [
           { label: 'View Project', action: () => navigate(`/projects/${projectId}`) }
         ]};
       } catch (e) { setIsRunning(false); return { text: `❌ ${e.message}` }; }
@@ -436,101 +463,104 @@ const ChatbotWidget = () => {
 
   return (
     <>
-      {/* ══ 3 Greeting Toasts — follows the bubble ════ */}
-      {!open && !dismissed && (
-        <div style={{
-          position: 'fixed', 
-          left: pos.x > window.innerWidth / 2 ? 'auto' : pos.x + 75,
-          right: pos.x > window.innerWidth / 2 ? (window.innerWidth - pos.x) + 15 : 'auto',
-          top: pos.y - 120,
-          zIndex: 998, display: 'flex', flexDirection: 'column', gap: 8,
-          alignItems: pos.x > window.innerWidth / 2 ? 'flex-end' : 'flex-start',
-          pointerEvents: 'none',
-          transition: isDragging ? 'none' : 'all 0.4s ease'
-        }}>
-          {greetings.map((g, i) => {
-            const isTop = i === toastIdx;
-            const isMid = i === (toastIdx + 1) % 3;
-            const scale    = isTop ? 1 : isMid ? 0.96 : 0.92;
-            const opacity  = isTop ? 1 : isMid ? 0.82 : 0.6;
-            const yOffset  = isTop ? 0 : isMid ? 4 : 8;
-
-            return (
-              <div
-                key={i}
-                style={{
-                  background: isDark ? '#1e293b' : '#ffffff',
-                  border: `1.5px solid ${isTop
-                    ? (isDark ? '#a855f7' : '#c084fc')
-                    : (isDark ? '#334155' : '#e9d5ff')}`,
-                  borderRadius: 14,
-                  padding: '0.6rem 0.9rem',
-                  display: 'flex', alignItems: 'center', gap: '0.6rem',
-                  boxShadow: isTop
-                    ? (isDark
-                        ? '0 8px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(168,85,247,0.2)'
-                        : '0 8px 24px rgba(168,85,247,0.2)')
-                    : (isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.06)'),
-                  opacity: toastVisible ? opacity : (isTop ? 0 : opacity * 0.5),
-                  transform: `translateY(${yOffset}px) scale(${scale})`,
-                  transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
-                  transformOrigin: pos.x > window.innerWidth / 2 ? 'right center' : 'left center',
-                  minWidth: 200,
-                  maxWidth: 260,
-                }}
-              >
-                <div style={{
-                  width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                  background: isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem',
-                }}>
-                  {g.icon}
-                </div>
-                <span style={{
-                  fontSize: '0.78rem', fontWeight: 600, flex: 1,
-                  color: isDark ? '#e2e8f0' : '#1e293b',
-                  lineHeight: 1.3,
-                }}>
-                  {g.text}
-                </span>
-
-                {/* Dismiss — only on top toast */}
-                {isTop && (
-                  <button
-                    onClick={e => { e.stopPropagation(); setDismissed(true); }}
-                    style={{
-                      background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                      border: 'none', borderRadius: 6, cursor: 'pointer',
-                      color: isDark ? '#94a3b8' : '#9ca3af',
-                      fontSize: '0.7rem', lineHeight: 1, padding: '3px 5px',
-                      flexShrink: 0,
-                    }}
-                  >✕</button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-
-      {/* ══ Floating Button ════════════════════════ */}
+      {/* ══ Floating Button Container ════════════════════════ */}
       <div 
-        onMouseDown={onMouseDown}
+        onMouseDown={inlineMode ? null : onMouseDown}
         style={{ 
-          position: 'fixed', 
-          left: pos.x, 
-          top: pos.y, 
+          position: inlineMode ? 'relative' : 'fixed', 
+          left: inlineMode ? 'auto' : pos.x, 
+          top: inlineMode ? 'auto' : pos.y, 
           zIndex: 1000, 
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center', 
           gap: 4,
-          cursor: isDragging ? 'grabbing' : 'grab',
-          transition: isDragging ? 'none' : 'left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s ease'
+          cursor: inlineMode ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+          transition: isDragging || inlineMode ? 'none' : 'left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.4s ease'
         }}
       >
+        {/* ══ 3 Greeting Toasts — perfectly anchored above the button ════ */}
+        {!open && !dismissed && (
+          <div style={{
+            position: 'absolute', 
+            bottom: '100%',
+            marginBottom: '8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 998, display: 'flex', flexDirection: 'column', gap: 8,
+            alignItems: 'center',
+            pointerEvents: 'none',
+            transition: 'all 0.4s ease'
+          }}>
+            {greetings.map((g, i) => {
+              const isTop = i === toastIdx;
+              const isMid = i === (toastIdx + 1) % 3;
+              const scale    = isTop ? 1 : isMid ? 0.96 : 0.92;
+              const opacity  = isTop ? 1 : isMid ? 0.82 : 0.6;
+              const yOffset  = isTop ? 0 : isMid ? 4 : 8;
+
+              return (
+                <div
+                  key={i}
+                  onClick={() => { if (!isDragging && isTop) { setOpen(true); setDismissed(true); } }}
+                  style={{
+                    background: isDark ? '#1e293b' : '#ffffff',
+                    border: `1.5px solid ${isTop
+                      ? (isDark ? '#a855f7' : '#c084fc')
+                      : (isDark ? '#334155' : '#e9d5ff')}`,
+                    borderRadius: 12,
+                    padding: '0.45rem 0.75rem',
+                    display: 'flex', alignItems: 'center', gap: '0.45rem',
+                    boxShadow: isTop
+                      ? (isDark
+                          ? '0 6px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(168,85,247,0.2)'
+                          : '0 6px 20px rgba(168,85,247,0.2)')
+                      : (isDark ? '0 3px 10px rgba(0,0,0,0.3)' : '0 3px 10px rgba(0,0,0,0.06)'),
+                    opacity: toastVisible ? opacity : (isTop ? 0 : opacity * 0.5),
+                    transform: `translateY(${yOffset}px) scale(${scale})`,
+                    transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+                    transformOrigin: 'bottom center',
+                    width: 'max-content',
+                    maxWidth: 220,
+                    pointerEvents: isTop ? 'auto' : 'none',
+                    cursor: isTop ? 'pointer' : 'default',
+                  }}
+                >
+                  <div style={{
+                    width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                    background: isDark ? 'rgba(168,85,247,0.2)' : 'rgba(168,85,247,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.85rem',
+                  }}>
+                    {g.icon}
+                  </div>
+                  <span style={{
+                    fontSize: '0.72rem', fontWeight: 600, flex: 1,
+                    color: isDark ? '#e2e8f0' : '#1e293b',
+                    lineHeight: 1.25,
+                  }}>
+                    {g.text}
+                  </span>
+
+                  {/* Dismiss — only on top toast */}
+                  {isTop && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setDismissed(true); }}
+                      style={{
+                        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                        border: 'none', borderRadius: 6, cursor: 'pointer',
+                        color: isDark ? '#94a3b8' : '#9ca3af',
+                        fontSize: '0.7rem', lineHeight: 1, padding: '3px 5px',
+                        flexShrink: 0,
+                        pointerEvents: 'auto'
+                      }}
+                    >✕</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
         {/* Name badge */}
         {!open && (
           <div style={{
@@ -590,9 +620,9 @@ const ChatbotWidget = () => {
       {/* ══ Chat Panel ═════════════════════════════ */}
       <div style={{
         position: 'fixed', 
-        left: pos.x > window.innerWidth / 2 ? 'auto' : pos.x + 85,
-        right: pos.x > window.innerWidth / 2 ? (window.innerWidth - pos.x) + 20 : 'auto',
-        top: Math.max(20, Math.min(pos.y - 580, window.innerHeight - 660)),
+        left: inlineMode ? 280 : (pos.x > window.innerWidth / 2 ? 'auto' : pos.x + 85),
+        right: inlineMode ? 'auto' : (pos.x > window.innerWidth / 2 ? (window.innerWidth - pos.x) + 20 : 'auto'),
+        top: inlineMode ? Math.max(20, window.innerHeight - (isExpanded ? 760 : 660)) : Math.max(20, Math.min(pos.y - 580, window.innerHeight - 660)),
         zIndex: 999,
         width: 420, height: 640,
         background: panelBg, borderRadius: 22, overflow: 'auto',
@@ -604,11 +634,13 @@ const ChatbotWidget = () => {
         transform: open ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.93)',
         opacity: open ? 1 : 0, pointerEvents: open ? 'all' : 'none',
         transition: 'all 0.35s cubic-bezier(0.34,1.2,0.64,1)',
-        resize: 'both',
-        minWidth: 320,
-        minHeight: 400,
-        maxWidth: 800,
-        maxHeight: 800
+        resize: isExpanded ? 'none' : 'both',
+        width: isExpanded ? '90vw' : 480,
+        height: isExpanded ? '85vh' : 720,
+        minWidth: 360,
+        minHeight: 450,
+        maxWidth: isExpanded ? '1200px' : 800,
+        maxHeight: isExpanded ? '1000px' : 900
       }}>
         {/* ── Header ── */}
         <div style={{
@@ -642,6 +674,24 @@ const ChatbotWidget = () => {
             </p>
           </div>
 
+          <button onClick={() => setShowAgents(v => !v)} title="Agents Panel"
+            style={{
+              background: showAgents ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
+              padding: '0.25rem 0.6rem', color: '#fff', cursor: 'pointer',
+              fontSize: '0.68rem', fontWeight: 700, letterSpacing: 0.3, marginRight: 4
+            }}>
+            AGENTS
+          </button>
+          
+          <button onClick={() => setIsExpanded(v => !v)} title={isExpanded ? "Collapse" : "Expand"}
+            style={{
+              background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
+              padding: '0.25rem 0.6rem', color: '#fff', cursor: 'pointer',
+              fontSize: '0.68rem', fontWeight: 700, letterSpacing: 0.3, marginRight: 4
+            }}>
+            {isExpanded ? "⬇ COLLAPSE" : "⬆ EXPAND"}
+          </button>
+
           <button onClick={() => setMessages([])} title="Clear"
             style={{
               background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
@@ -665,6 +715,62 @@ const ChatbotWidget = () => {
             Press Enter to send
           </span>
         </div>
+
+        {/* ── Agents Panel ── */}
+        {showAgents && (
+          <div style={{
+            background: isDark ? '#1e293b' : '#f1f5f9',
+            borderBottom: `1px solid ${border}`,
+            padding: '1rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+            gap: '0.5rem',
+            maxHeight: '200px',
+            overflowY: 'auto'
+          }}>
+            {[
+              { id: 'planner', label: 'Planner', icon: '🎯' },
+              { id: 'critic', label: 'Critic', icon: '🧐' },
+              { id: 'task', label: 'Task Generator', icon: '📝' },
+              { id: 'risk', label: 'Risk Assessor', icon: '🛡️' },
+              { id: 'ethics', label: 'Ethics Auditor', icon: '⚖️' },
+              { id: 'report', label: 'Reporter', icon: '📊' },
+              { id: 'architect', label: 'Architect', icon: '🏛️' },
+              { id: 'sre', label: 'SRE / Debug', icon: '🔧' },
+              { id: 'commit', label: 'Commit Analyzer', icon: '💾' },
+              { id: 'visual', label: 'Visual Auditor', icon: '👁️' },
+              { id: 'reflexion', label: 'Reflexion', icon: '🧠' },
+              { id: 'replanning', label: 'Replanning', icon: '🔄' },
+              { id: 'scoring', label: 'Scoring', icon: '⭐' },
+              { id: 'dependency', label: 'Dependency', icon: '📦' },
+              { id: 'rule', label: 'Rule Enforcer', icon: '📏' },
+              { id: 'decision', label: 'Decision', icon: '🧭' },
+              { id: 'health', label: 'System Health', icon: '⚕️' },
+            ].map(agent => (
+              <button
+                key={agent.id}
+                onClick={() => {
+                  setShowAgents(false);
+                  setIsExpanded(true); // Auto expand on run
+                  sendQuick(`Run ${agent.label} agent`);
+                }}
+                style={{
+                  background: isDark ? '#334155' : '#ffffff',
+                  border: `1px solid ${border}`,
+                  borderRadius: 8, padding: '0.5rem',
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  fontSize: '0.75rem', fontWeight: 600, color: isDark ? '#f8fafc' : '#1e293b',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onMouseOver={e => e.currentTarget.style.borderColor = '#a855f7'}
+                onMouseOut={e => e.currentTarget.style.borderColor = border}
+              >
+                <span>{agent.icon}</span>
+                {agent.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── Messages ── */}
         <div style={{

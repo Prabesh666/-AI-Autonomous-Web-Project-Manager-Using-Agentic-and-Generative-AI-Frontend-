@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { runAgent, getAgentJobStatus } from '../api/agents';
+import { runAgent, getAgentJobStatus, approveAgentJob, rejectAgentJob } from '../api/agents';
 
 /**
  * Centralized AI state hook.
@@ -15,7 +15,7 @@ export const useAgents = () => {
    * Status Polling logic.
    * Continues until status is 'completed' or 'failed'.
    */
-  const pollJobStatus = useCallback(async (type, jobId, interval = 2000, maxAttempts = 30) => {
+  const pollJobStatus = useCallback(async (type, jobId, interval = 3000, maxAttempts = 100) => {
     let attempts = 0;
     
     return new Promise((resolve, reject) => {
@@ -28,8 +28,10 @@ export const useAgents = () => {
           if (job.status === 'completed') {
             setResultsMap(prev => ({ ...prev, [type]: job.result }));
             resolve(job);
-          } else if (job.status === 'failed') {
-            const msg = job.error?.message || 'Agent job failed';
+          } else if (job.status === 'pending_approval') {
+            resolve(job);
+          } else if (job.status === 'failed' || job.status === 'rejected') {
+            const msg = job.error?.message || `Agent job ${job.status}`;
             setErrorMap(prev => ({ ...prev, [type]: msg }));
             reject(new Error(msg));
           } else if (attempts >= maxAttempts) {
@@ -77,6 +79,42 @@ export const useAgents = () => {
     }
   }, []);
 
+  /**
+   * Approve a pending HITL job.
+   */
+  const approveJob = useCallback(async (jobId, type) => {
+    setLoadingMap(prev => ({ ...prev, [type]: true }));
+    try {
+      const { data } = await approveAgentJob(jobId);
+      setResultsMap(prev => ({ ...prev, [type]: data.result }));
+      return data;
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || 'Failed to approve job';
+      setErrorMap(prev => ({ ...prev, [type]: msg }));
+      throw err;
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [type]: false }));
+    }
+  }, []);
+
+  /**
+   * Reject a pending HITL job.
+   */
+  const rejectJob = useCallback(async (jobId, type, reason = '') => {
+    setLoadingMap(prev => ({ ...prev, [type]: true }));
+    try {
+      const { data } = await rejectAgentJob(jobId, reason);
+      setErrorMap(prev => ({ ...prev, [type]: 'Job was rejected by user' }));
+      return data;
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || 'Failed to reject job';
+      setErrorMap(prev => ({ ...prev, [type]: msg }));
+      throw err;
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [type]: false }));
+    }
+  }, []);
+
   /** Remove a specific result/error from memory */
   const clearResult = useCallback((type) => {
     setResultsMap(prev => { const m = { ...prev }; delete m[type]; return m; });
@@ -95,6 +133,8 @@ export const useAgents = () => {
     errorMap,
     executeAgent,
     pollJobStatus,
+    approveJob,
+    rejectJob,
     clearResult,
     clearAll,
   };

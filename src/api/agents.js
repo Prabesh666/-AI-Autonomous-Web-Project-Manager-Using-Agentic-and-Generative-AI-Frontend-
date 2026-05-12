@@ -25,3 +25,17 @@ export const runAgent = async (type, projectId, extra = {}) => {
 export const getAgentJobStatus = async (jobId) => {
   return api.get(`/agents/status/${jobId}`);
 };
+
+/**
+ * Approve a pending AI job.
+ */
+export const approveAgentJob = async (jobId) => {
+  return api.post(`/agents/${jobId}/approve`);
+};
+
+/**
+ * Reject a pending AI job.
+ */
+export const rejectAgentJob = async (jobId, reason = '') => {
+  return api.post(`/agents/${jobId}/reject`, { reason });
+};

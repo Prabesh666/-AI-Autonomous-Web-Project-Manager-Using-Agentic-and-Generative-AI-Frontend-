@@ -5,6 +5,7 @@ import { useAgents } from '../../hooks/useAgents';
 import { AppContext } from '../../context/AppContext';
 import { useTasks } from '../../hooks/useTasks';
 import { useToast } from '../../context/ToastContext';
+import HITLApprovalModal from '../../components/HITLApprovalModal';
 
 const AiReviewPage = () => {
   const { projectId } = useParams();
@@ -27,6 +28,9 @@ const AiReviewPage = () => {
       text: `Welcome! I'm your AI Review Agent. Click **"Run Full Audit"** above to trigger a complete analysis of this project — including task generation, risk assessment, and an executive report. Or ask me anything below.`
     }
   ]);
+  const [pendingJob, setPendingJob] = useState(null);
+  const [isHitlProcessing, setIsHitlProcessing] = useState(false);
+  const { approveJob, rejectJob } = useAgents();
 
   // Load project and tasks on mount
   useEffect(() => {
@@ -63,6 +67,15 @@ const AiReviewPage = () => {
       addMessage('ai', `⟳ Job queued (ID: ${String(jobId).substring(0, 12)}…). Polling for results...`);
 
       const completedJob = await pollJobStatus('planner', jobId, 2500, 24);
+      
+      // 🛡️ MODAL TRIGGER FIX: If the job is pending approval, we MUST show the modal.
+      if (completedJob.status === 'pending_approval' || (completedJob.status === 'completed' && !completedJob.result)) {
+        console.log("⏸️ Triggering HITL Approval Modal for job:", jobId);
+        setPendingJob(completedJob);
+        addMessage('ai', '⏸️ **Analysis Complete.** I have generated a strategic plan. Please review the **Approval Pop-up** to proceed.');
+        return;
+      }
+
       const result = completedJob?.result || {};
 
       const taskCount = result.taskCount || 0;
@@ -88,6 +101,35 @@ const AiReviewPage = () => {
     }
   };
 
+  const handleApproveHitl = async (jobId) => {
+    setIsHitlProcessing(true);
+    try {
+      await approveJob(jobId, 'planner');
+      setPendingJob(null);
+      toast.success('Audit results approved!');
+      loadTasks(projectId);
+      addMessage('ai', '✅ **Audit Approved.** Your Kanban board and risk registry have been updated.');
+    } catch (err) {
+      toast.error('Failed to approve audit.');
+    } finally {
+      setIsHitlProcessing(false);
+    }
+  };
+
+  const handleRejectHitl = async (jobId, reason) => {
+    setIsHitlProcessing(true);
+    try {
+      await rejectJob(jobId, 'planner', reason);
+      setPendingJob(null);
+      toast.info('Audit results rejected.');
+      addMessage('ai', '❌ **Audit Rejected.** AI will refine future assessments based on your feedback.');
+    } catch (err) {
+      toast.error('Failed to reject audit.');
+    } finally {
+      setIsHitlProcessing(false);
+    }
+  };
+
   /* ── Chat Send ───────────────────────────────── */
   const handleSend = () => {
     const text = chatInput.trim();
@@ -106,7 +148,7 @@ const AiReviewPage = () => {
         const pct  = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
         reply = `Project health: **${pct}% completion** (${done} of ${tasks.length} tasks done).`;
       } else if (lower.includes('help')) {
-        reply = 'I can help you:\n• Run a full AI audit\n• Check task and risk counts\n• Review project health\n\nJust ask or click **"Run Full Audit"** to start!';
+        reply = 'I can help you:\n• Run a full AI audit\n• Check task and risk counts\n• Review project health\n\nJust ask or click **\"Run Full Audit\"** to start!';
       }
       addMessage('ai', reply);
     }, 700);
@@ -303,6 +345,13 @@ const AiReviewPage = () => {
         @keyframes fade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         @keyframes chatPulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
       `}</style>
+
+      <HITLApprovalModal 
+        job={pendingJob} 
+        onApprove={handleApproveHitl} 
+        onReject={handleRejectHitl} 
+        isProcessing={isHitlProcessing} 
+      />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useProjects } from '../../hooks/useProjects';
+import ChatbotWidget from './ChatbotWidget';
 
 const navItems = [
   {
@@ -148,40 +149,77 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
       }}>
         {label}
       </p>
-      {items.map(item => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          style={({ isActive }) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.625rem',
-            padding: '0.55rem 0.75rem',
-            borderRadius: '8px',
-            fontSize: '0.855rem',
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? activeText : textSecondary,
-            background: isActive ? activeLink : 'transparent',
-            textDecoration: 'none',
-            transition: 'all 0.15s',
-            margin: '0.1rem 0',
-          })}
-          onMouseEnter={e => {
-            if (!e.currentTarget.className.includes('active')) {
-              e.currentTarget.style.background = hoverLink;
-              e.currentTarget.style.color = textPrimary;
-            }
-          }}
-          onMouseLeave={e => {
-            // restore by letting NavLink style handle active state
-            e.currentTarget.style.background = '';
-            e.currentTarget.style.color = '';
-          }}
-        >
-          {item.icon}
-          {item.label}
-        </NavLink>
-      ))}
+      {items.map(item => {
+        if (item.isEvent) {
+          return (
+            <button
+              key={item.label}
+              onClick={() => window.dispatchEvent(new CustomEvent('toggleChatbot'))}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.55rem 0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.855rem',
+                fontWeight: 500,
+                color: textSecondary,
+                background: 'transparent',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                margin: '0.1rem 0',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = hoverLink;
+                e.currentTarget.style.color = textPrimary;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = textSecondary;
+              }}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          );
+        }
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            style={({ isActive }) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.625rem',
+              padding: '0.55rem 0.75rem',
+              borderRadius: '8px',
+              fontSize: '0.855rem',
+              fontWeight: isActive ? 600 : 500,
+              color: isActive ? activeText : textSecondary,
+              background: isActive ? activeLink : 'transparent',
+              textDecoration: 'none',
+              transition: 'all 0.15s',
+              margin: '0.1rem 0',
+            })}
+            onMouseEnter={e => {
+              if (!e.currentTarget.className.includes('active')) {
+                e.currentTarget.style.background = hoverLink;
+                e.currentTarget.style.color = textPrimary;
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = '';
+              e.currentTarget.style.color = '';
+            }}
+          >
+            {item.icon}
+            {item.label}
+          </NavLink>
+        );
+      })}
     </div>
   );
 
@@ -241,6 +279,11 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
           <NavGroup label="Main"     items={navItems}           />
           <NavGroup label="AI Tools" items={resolvedAiItems}    />
         </nav>
+
+        {/* Embedded Chatbot Widget */}
+        <div style={{ padding: '0.5rem', display: 'flex', justifyContent: 'center' }}>
+          <ChatbotWidget inlineMode={true} />
+        </div>
 
         {/* Footer */}
         <div style={{

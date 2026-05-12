@@ -22,7 +22,6 @@ const CreateProjectPage = lazy(() => import('../pages/projects/CreateProjectPage
 const AiMemoryPage = lazy(() => import('../pages/ai-memory/AiMemoryPage'));
 const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'));
 import PrivateRoute from '../components/PrivateRoute';
-import ChatbotWidget from '../components/layout/ChatbotWidget';
 
 const AppRouter = () => {
   return (
@@ -56,7 +55,6 @@ const AppRouter = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-      <ChatbotWidget />
     </BrowserRouter>
   );
 };

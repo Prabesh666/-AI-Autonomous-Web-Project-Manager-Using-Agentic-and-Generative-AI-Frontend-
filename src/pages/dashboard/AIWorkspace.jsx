@@ -210,9 +210,14 @@ const AIWorkspace = () => {
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
           {[
-            { id: 'decision', name: 'Decision Agent', icon: '🧠', desc: 'Evaluates project trade-offs and provides optimized direction.' },
+            { id: 'planner', name: 'Planner Agent', icon: '🚀', desc: 'Architects the entire project roadmap and provisions tasks/risks.' },
+            { id: 'architect', name: 'Architect Agent', icon: '🌀', desc: 'Analyzes evolutionary patterns and proposes new autonomous features.' },
+            { id: 'commit', name: 'Commit Analyzer', icon: '🔍', desc: 'Deep-dives into git history to understand code evolution and debt.' },
             { id: 'task', name: 'Task Agent', icon: '📝', desc: 'Decomposes high-level goals into granular, actionable sub-tasks.' },
             { id: 'risk', name: 'Risk Agent', icon: '🛡️', desc: 'Identifies potential failures and suggests mitigation strategies.' },
+            { id: 'sre', name: 'SRE Agent', icon: '🛠️', desc: 'Autonomous root cause analysis and self-healing for production errors.' },
+            { id: 'visual', name: 'Visual Auditor', icon: '👁️', desc: 'Performs semantic UI/UX audits to ensure 0.001% design excellence.' },
+            { id: 'reflexion', name: 'Reflexion Agent', icon: '🔄', desc: 'Autonomously reflects on previous failures to optimize future plans.' },
             { id: 'ethics', name: 'Ethics Agent', icon: '⚖️', desc: 'Ensures compliance with safety guidelines and ethical standards.' },
             { id: 'report', name: 'Report Agent', icon: '📊', desc: 'Generates executive summaries and health status reports.' }
           ].map(agent => (
@@ -251,7 +256,8 @@ const AIWorkspace = () => {
             { id: 'rule', name: 'Rule Engine', icon: '⚙️', desc: 'Validates constraints and enforces strict project governance rules.' },
             { id: 'scoring', name: 'Scoring Engine', icon: '🎯', desc: 'Calculates priority scores, risk metrics, and workload balancing.' },
             { id: 'dependency', name: 'Dependency Engine', icon: '🔗', desc: 'Analyzes cross-task relationships and detects critical path blockers.' },
-            { id: 'replanning', name: 'Replanning Engine', icon: '🔄', desc: 'Auto-adjusts timelines and resources to compensate for delays.' }
+            { id: 'replanning', name: 'Replanning Engine', icon: '🔄', desc: 'Auto-adjusts timelines and resources to compensate for delays.' },
+            { id: 'velocity', name: 'Velocity Engine', icon: '📈', desc: 'Predicts project timelines and forecasts completion dates based on speed.' }
           ].map(engine => (
             <div key={engine.id} style={{ ...cardStyle }}>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: textPrimary(isDark), marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -280,45 +286,167 @@ const AIWorkspace = () => {
         </div>
       </div>
 
-      {/* ── Console Output Area ──────────────────────── */}
+      {/* ── Elite AI Terminal Console ──────────────────────── */}
       {consoleLogs.length > 0 && (
-        <div style={{
-          background: '#0f172a', borderRadius: '14px', border: '1px solid #1e293b', 
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden', animation: 'fadeIn 0.4s ease-out'
+        <div className="elite-terminal" style={{
+          background: isDark ? 'rgba(10, 12, 20, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'}`,
+          borderRadius: '24px',
+          boxShadow: isDark ? '0 40px 80px -20px rgba(0,0,0,0.8)' : '0 20px 40px -10px rgba(0,0,0,0.05)',
+          overflow: 'hidden',
+          animation: 'terminalSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+          marginTop: '2.5rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.5rem', background: '#1e293b', borderBottom: '1px solid #334155' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#10b981">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M4 15V9a2 2 0 012-2h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2z" />
-               </svg>
-               <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 600, fontFamily: 'monospace' }}>agent_output.log</span>
-               {activeJob && <span style={{ fontSize: '0.72rem', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', padding: '0.1rem 0.5rem', borderRadius: 20, marginLeft: 4 }}>● running</span>}
+          {/* Terminal Title Bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '1.25rem 2rem',
+            background: isDark ? 'rgba(30, 41, 59, 0.4)' : 'rgba(241, 245, 249, 0.5)',
+            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'}`
+          }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+               <div style={{ display: 'flex', gap: '8px' }}>
+                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
+                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
+                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
+               </div>
+               <div style={{ height: '16px', width: '1px', background: isDark ? '#334155' : '#e2e8f0', margin: '0 4px' }} />
+               <span style={{ 
+                 color: isDark ? '#94a3b8' : '#64748b', 
+                 fontSize: '0.75rem', 
+                 fontWeight: 800, 
+                 fontFamily: '"JetBrains Mono", monospace',
+                 letterSpacing: '0.1em',
+                 textTransform: 'uppercase'
+               }}>
+                 {activeJob ? `${activeJob.type}_agent.log` : 'agent_output.log'}
+               </span>
+               <div className={`terminal-pulse ${activeJob ? 'active' : ''}`} />
              </div>
-             <button onClick={() => setConsoleLogs([])} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'monospace' }}>
-               [ clear ]
+             <button 
+               onClick={() => setConsoleLogs([])} 
+               className="terminal-clear-btn"
+               style={{ 
+                 background: 'none', border: 'none', 
+                 color: isDark ? '#475569' : '#94a3b8', 
+                 fontSize: '0.7rem', fontWeight: 700, 
+                 cursor: 'pointer', fontFamily: 'monospace',
+                 padding: '4px 12px', borderRadius: '6px',
+                 transition: 'all 0.2s'
+               }}
+             >
+               CLEAR_CACHE
              </button>
           </div>
-          <div style={{ padding: '1.25rem 1.5rem', maxHeight: '360px', overflowY: 'auto' }}>
+
+          {/* Terminal Content Area */}
+          <div style={{ 
+            padding: '2rem', 
+            maxHeight: '450px', 
+            overflowY: 'auto',
+            fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+            fontSize: '0.875rem',
+            lineHeight: '1.7',
+            background: isDark ? 'transparent' : 'rgba(248, 250, 252, 0.3)'
+          }}>
             {consoleLogs.map((entry, i) => (
-              <div key={i} style={{ display: 'flex', gap: '1rem', marginBottom: '0.35rem', fontFamily: 'monospace', fontSize: '0.83rem' }}>
-                <span style={{ color: '#475569', flexShrink: 0 }}>{entry.ts}</span>
+              <div key={i} style={{ 
+                display: 'flex', gap: '1.25rem', marginBottom: '0.5rem',
+                animation: 'logLineIn 0.3s ease-out both',
+                animationDelay: `${i * 0.05}s`
+              }}>
+                <span style={{ color: isDark ? '#334155' : '#cbd5e1', flexShrink: 0, fontSize: '0.75rem' }}>
+                  {entry.ts}
+                </span>
                 <span style={{
-                  color: entry.line.startsWith('[✔]') || entry.line.startsWith('[★]') ? '#10b981'
-                       : entry.line.startsWith('[✖]') ? '#ef4444'
+                  color: entry.line.startsWith('[✔]') || entry.line.startsWith('[★]') ? '#4ade80'
+                       : entry.line.startsWith('[✖]') ? '#f87171'
                        : entry.line.startsWith('[⟳]') ? '#60a5fa'
-                       : '#94a3b8'
-                }}>{entry.line}</span>
+                       : entry.line.startsWith('[▶]') ? '#a855f7'
+                       : isDark ? '#cbd5e1' : '#334155',
+                  fontWeight: entry.line.startsWith('[★]') ? 800 : 500,
+                  textShadow: entry.line.startsWith('[★]') ? (isDark ? '0 0 12px rgba(74, 222, 128, 0.3)' : 'none') : 'none'
+                }}>
+                  {entry.line}
+                </span>
               </div>
             ))}
+            
             {activeJob && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.2s infinite' }} />
-                <span style={{ color: '#60a5fa', fontFamily: 'monospace', fontSize: '0.83rem' }}>Waiting for worker response...</span>
+              <div style={{ 
+                display: 'flex', alignItems: 'center', gap: '1rem', 
+                marginTop: '1.5rem', padding: '1rem',
+                background: isDark ? 'rgba(59, 130, 246, 0.05)' : 'rgba(59, 130, 246, 0.03)',
+                borderRadius: '12px', border: `1px dashed ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)'}`
+              }}>
+                <div className="neural-spinner" />
+                <span style={{ 
+                  color: '#60a5fa', 
+                  fontFamily: 'monospace', 
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.05em'
+                }}>
+                  ORCHESTRATING_AGENT_RESPONSE...
+                </span>
               </div>
             )}
           </div>
         </div>
       )}
+      
+      {/* Premium Animations & Effects */}
+      <style>{`
+        @keyframes terminalSlideIn {
+          from { opacity: 0; transform: translateY(30px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes logLineIn {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .terminal-pulse {
+          width: 8px; height: 8px;
+          border-radius: 50%;
+          background: #475569;
+          transition: all 0.3s;
+        }
+        .terminal-pulse.active {
+          background: #60a5fa;
+          box-shadow: 0 0 12px #3b82f6;
+          animation: terminalGlow 1.5s infinite;
+        }
+        @keyframes terminalGlow {
+          0% { opacity: 0.4; }
+          50% { opacity: 1; }
+          100% { opacity: 0.4; }
+        }
+        .neural-spinner {
+          width: 16px; height: 16px;
+          border: 2px solid rgba(59, 130, 246, 0.2);
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .terminal-clear-btn:hover {
+          background: rgba(239, 68, 68, 0.1) !important;
+          color: #ef4444 !important;
+        }
+        /* Custom Scrollbar for Terminal */
+        .elite-terminal div::-webkit-scrollbar { width: 6px; }
+        .elite-terminal div::-webkit-scrollbar-track { background: transparent; }
+        .elite-terminal div::-webkit-scrollbar-thumb { 
+          background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}; 
+          border-radius: 10px; 
+        }
+        .elite-terminal div::-webkit-scrollbar-thumb:hover { 
+          background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'}; 
+        }
+      `}</style>
       
       {/* Styles defined as functions to handle theme */}
       <style>{`

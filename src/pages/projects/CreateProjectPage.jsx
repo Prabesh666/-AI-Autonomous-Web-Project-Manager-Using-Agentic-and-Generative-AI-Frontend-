@@ -4,7 +4,8 @@ import { AppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { createProject } from '../../api/projects';
-import { runAgent, getAgentJobStatus } from '../../api/agents';
+import { runAgent, getAgentJobStatus, approveAgentJob, rejectAgentJob } from '../../api/agents';
+import HITLApprovalModal from '../../components/HITLApprovalModal';
 import './CreateProjectPage.css';
 
 /* ── Template prompts ──────────────────────────────── */
@@ -41,6 +42,8 @@ const CreateProjectPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [step, setStep] = useState(0); // 0=idle 1=creating 2=AI running 3=done
   const [error, setError] = useState('');
+  const [pendingJob, setPendingJob] = useState(null);
+  const [isHitlProcessing, setIsHitlProcessing] = useState(false);
 
   // step labels
   const STEPS = [
@@ -59,7 +62,11 @@ const CreateProjectPage = () => {
           const res = await getAgentJobStatus(jobId);
           const job = res?.data || res;
           if (job.status === 'completed') return resolve(job);
-          if (job.status === 'failed')    return reject(new Error(job.error?.message || 'AI job failed'));
+          if (job.status === 'pending_approval') {
+            setPendingJob(job);
+            return resolve(job);
+          }
+          if (job.status === 'failed' || job.status === 'rejected') return reject(new Error(job.error?.message || `AI job ${job.status}`));
           if (attempts >= max)            return resolve(job); // timeout — navigate anyway
           setTimeout(tick, interval);
         } catch (e) { reject(e); }
@@ -92,8 +99,12 @@ const CreateProjectPage = () => {
       const jobId    = agentRes?.data?.jobId || agentRes?.jobId;
 
       if (jobId) {
-        /* Step 2b: poll until the job finishes */
-        await pollJob(jobId);
+        /* Step 2b: poll until the job finishes or needs approval */
+        const finalJob = await pollJob(jobId);
+        if (finalJob.status === 'pending_approval') {
+          // Wait for user to approve via the modal
+          return;
+        }
       }
 
       /* Step 3: done */
@@ -118,6 +129,37 @@ const CreateProjectPage = () => {
     setIsGenerating(false);
     setStep(0);
     setError('');
+    setPendingJob(null);
+  };
+
+  const handleApproveHitl = async (jobId) => {
+    setIsHitlProcessing(true);
+    try {
+      await approveAgentJob(jobId);
+      setPendingJob(null);
+      setStep(3);
+      toast.success('Project plan approved and saved!');
+      // Parse project id from somewhere or rely on the previous state
+      setTimeout(() => navigate(`/projects`), 800);
+    } catch (err) {
+      toast.error('Failed to approve plan.');
+    } finally {
+      setIsHitlProcessing(false);
+    }
+  };
+
+  const handleRejectHitl = async (jobId) => {
+    setIsHitlProcessing(true);
+    try {
+      await rejectAgentJob(jobId);
+      setPendingJob(null);
+      handleCancel();
+      toast.info('Project plan rejected.');
+    } catch (err) {
+      toast.error('Failed to reject plan.');
+    } finally {
+      setIsHitlProcessing(false);
+    }
   };
 
   const handleTemplateClick = (templatePrompt) => {
@@ -275,6 +317,13 @@ const CreateProjectPage = () => {
           </div>
         </div>
       </div>
+
+      <HITLApprovalModal 
+        job={pendingJob} 
+        onApprove={handleApproveHitl} 
+        onReject={handleRejectHitl} 
+        isProcessing={isHitlProcessing} 
+      />
     </div>
   );
 };

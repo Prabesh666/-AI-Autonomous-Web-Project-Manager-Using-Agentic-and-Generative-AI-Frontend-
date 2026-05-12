@@ -6,8 +6,8 @@
  *  - JWT auto-attachment via request interceptor
  *  - 401 auto-logout via response interceptor
  *  - Global error message logging from backend
- *  - 10s timeout, withCredentials for future cookie/refresh support
- *  - Request cancellation support via AbortController (native Axios)
+ *  - 60s timeout for AI cold-starts
+ *  - 🛡️ 0.001% UX: Autonomous Self-Healing (Retry with Exponential Backoff)
  */
 
 import axios from 'axios';
@@ -22,8 +22,10 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000,           // 10 seconds — avoids hanging on slow responses
-  withCredentials: false,   // Set to true when using cookie-based sessions or refresh tokens
+  timeout: 60000,       // 60 seconds — allows time for AI cold-starts
+  withCredentials: false,
+  retry: 3,             // 🛡️ Auto-retry 3 times on failure
+  retryDelay: 1000,     // 1s base delay between retries
 });
 
 // ─── Request Interceptor ──────────────────────────────────────────────────────
@@ -36,16 +38,14 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // ─── Response Interceptor ─────────────────────────────────────────────────────
 
 apiClient.interceptors.response.use(
   (response) => response.data,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const serverMessage =
       error.response?.data?.message ||
@@ -53,24 +53,53 @@ apiClient.interceptors.response.use(
       error.message ||
       'An unexpected error occurred';
 
+    // 401 — clear session and redirect to login
     if (status === 401) {
-      // Token expired or invalid — clear session and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Use window.location to guarantee a full navigation even outside React Router
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+      return Promise.reject(error);
     }
 
-    // Log backend error in development for easier debugging
+    // 🛡️ 0.001% UX: Autonomous Self-Healing (Retry with Exponential Backoff)
+    const config = error.config;
+    if (config && config.retry) {
+      config.__retryCount = config.__retryCount || 0;
+      if (config.__retryCount < config.retry) {
+        config.__retryCount += 1;
+        const delay = (config.retryDelay || 1000) * config.__retryCount;
+        console.warn(`[Neural Link] Jitter detected. Retry ${config.__retryCount}/${config.retry} in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return apiClient(config);
+      }
+    }
+
+    // Log backend error in development
     if (import.meta.env.DEV) {
       console.error(`[API Error] ${status || 'Network'}: ${serverMessage}`);
     }
 
-    // Propagate a normalized error so calling hooks/components can read it
-    return Promise.reject(new Error(serverMessage));
+    return Promise.reject(error);
   }
 );
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+export const getProjects = () => apiClient.get('/projects');
+export const getProject = (id) => apiClient.get(`/projects/${id}`);
+export const createProject = (data) => apiClient.post('/projects', data);
+export const updateProject = (id, data) => apiClient.put(`/projects/${id}`, data);
+export const deleteProject = (id) => apiClient.delete(`/projects/${id}`);
+export const indexProject = (id) => apiClient.post(`/projects/${id}/index`);
+export const runVisualAudit = (projectId, url) => apiClient.post('/audits/run', { projectId, url });
+export const getVelocityForecast = (id) => apiClient.get(`/projects/${id}/velocity`);
+export const getProjectLessons = (id) => apiClient.get(`/projects/${id}/lessons`);
+export const proposeEvolution = (id) => apiClient.post(`/projects/${id}/evolve`);
+export const getProjectBudget = (id) => apiClient.get(`/projects/${id}/budget`);
+export const getProjectInfra = (id) => apiClient.get(`/projects/${id}/infra`);
+export const getProjectCompliance = (id) => apiClient.get(`/projects/${id}/compliance`);
+
+// ─── Tasks ────────────────────────────────────────────────────────────────────
 
 export default apiClient;
